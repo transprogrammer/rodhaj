@@ -7,7 +7,7 @@ license = "MPL-2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.9,<3.12"
 discord-py = {extras = ["speed"], version = "^2.3.2"}
 python-dotenv = "^1.0.0"
 uvloop = "^0.17.0"
