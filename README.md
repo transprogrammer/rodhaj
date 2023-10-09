@@ -20,6 +20,23 @@ Unlike other frameworks, discord.py does not automatically sync slash commands (
 r>sync 1235
 ```
 
+### PG Setup
+If you want to run postgres on an docker compose stack,
+then all you need to do is to make an `.env` file in the root of the repo,
+and add these:
+
+```bash
+POSTGRES_PASSWORD=password
+POSTGRES_USER=user
+POSTGRES_DB=user
+```
+
+The values above set up the root postgres user. Ideally you will want to make an new user, which can be done like so:
+
+```sql
+CREATE ROLE rodhaj WITH LOGIN PASSWORD 'somepass';
+CREATE DATABASE rodhaj OWNER rodhaj;
+```
 
 ### Setup Instructions
 
@@ -29,9 +46,6 @@ You must have these installed:
 - Python
 - Git
 - PostgreSQL
-
-In order to run pg in a docker container, spin up the docker compose file
-located in the root of the repo (`sudo docker compose up -d`).
 
 1. Clone the repo or use it as a template.
 2. Copy over the ENV file template to the `bot` directory
