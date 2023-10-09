@@ -1,0 +1,15 @@
+version: "3.9"
+name: "rodhaj-dev"
+services:
+  postgres:
+    container_name: Rodhaj-Postgres
+    image: postgres:15 
+    env_file:
+      - .env
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres_volume:

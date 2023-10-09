@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "rodhaj"
+version = "0.1.0"
+description = "Trnasprogrammer discord bot"
+authors = ["No767 <73260931+No767@users.noreply.github.com>"]
+license = "MPL-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+discord-py = {extras = ["speed"], version = "^2.3.2"}
+python-dotenv = "^1.0.0"
+uvloop = "^0.17.0"
+asyncpg = "^0.28.0"
+discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
+psutil = "^5.9.5"
+pygit2 = "^1.13.1"
+python-dateutil = "^2.8.2"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.4.0"
+pyright = "^1.1.330.post0"
+ruff = "^0.0.292"
+watchfiles = "^0.20.0"
+jishaku = "^2.5.1"
+
+[tool.isort]
+profile = 'black'
+
+[tool.pyright]
+include = ["bot/**"]
+exclude = [
+    "**/__pycache__", 
+    "**/.mypy_cache", 
+    "**/.dmpypy.json", 
+]
+reportMissingImports = true
+typeCheckingMode = "basic"
+reportUnnecessaryTypeIgnoreComment = "warning"
+
+[tool.bandit]
+skips = ["B311", "B101"]
+
+[tool.ruff]
+ignore = ["E501", "N999", "E402"]
+select = ["E", "F", "N", "ASYNC", "S", "ERA"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
