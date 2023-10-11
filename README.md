@@ -74,18 +74,3 @@ You must have these installed:
     r>sync 12345 
     ```
 7. Now go ahead and play around with the default commands. Add your own, delete some, do whatever you want now.
-
-#### License
-
-<sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
-
-<br>
-
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in Rodhaj by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
-</sub>
