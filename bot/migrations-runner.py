@@ -6,11 +6,12 @@ import traceback
 from functools import wraps
 from pathlib import Path
 from types import TracebackType
-from typing import Optional, Self, TypeVar
+from typing import Optional, TypeVar
 
 import asyncpg
 import click
 from dotenv import load_dotenv
+from typing_extensions import Self
 
 load_dotenv()
 
