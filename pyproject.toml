@@ -16,6 +16,8 @@ discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = 
 psutil = "^5.9.5"
 pygit2 = "^1.13.1"
 python-dateutil = "^2.8.2"
+click = "^8.1.7"
+typing-extensions = "^4.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.4.0"
