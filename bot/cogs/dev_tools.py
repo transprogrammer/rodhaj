@@ -2,6 +2,7 @@ from typing import Literal, Optional
 
 import discord
 from cogs import EXTENSIONS
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 
@@ -19,7 +20,7 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
     # https://about.abstractumbra.dev/discord.py/2023/01/29/sync-command-example.html
     @commands.guild_only()
     @commands.is_owner()
-    @commands.command(name="sync", hidden=True)
+    @commands.command(name="sync")
     async def sync(
         self,
         ctx: Context,
@@ -65,7 +66,7 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
 
     @commands.guild_only()
     @commands.is_owner()
-    @commands.command(name="reload-all", hidden=True)
+    @commands.command(name="reload-all")
     async def reload_all(self, ctx: commands.Context) -> None:
         """Reloads all cogs. Used in production to not produce any downtime"""
         if not hasattr(self.bot, "uptime"):

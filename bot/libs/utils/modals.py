@@ -1,17 +1,15 @@
-from typing import Any
-
 import discord
 
 from .errors import produce_error_embed
 
-NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
+NO_CONTROL_MSG = "This modal cannot be controlled by you, sorry!"
 
 
-class RoboView(discord.ui.View):
-    """Subclassed `discord.ui.View` that includes sane default configs"""
+class RoboModal(discord.ui.Modal):
+    """Subclassed `discord.ui.Modal` that includes sane default configs"""
 
-    def __init__(self, interaction: discord.Interaction):
-        super().__init__()
+    def __init__(self, interaction: discord.Interaction, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.interaction = interaction
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
@@ -24,17 +22,9 @@ class RoboView(discord.ui.View):
         return False
 
     async def on_error(
-        self,
-        interaction: discord.Interaction,
-        error: Exception,
-        item: discord.ui.Item[Any],
-        /,
+        self, interaction: discord.Interaction, error: Exception, /
     ) -> None:
         await interaction.response.send_message(
             embed=produce_error_embed(error), ephemeral=True
         )
         self.stop()
-
-    async def on_timeout(self) -> None:
-        if self.interaction.response.is_done():
-            await self.interaction.edit_original_response(view=None)

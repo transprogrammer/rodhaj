@@ -11,15 +11,15 @@ from libs.utils import RodhajLogger
 from rodhaj import Rodhaj
 
 # Only used for Windows development
-if os.name == "nt":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-else:
-    try:
-        import uvloop
+# if os.name == "nt":
+#     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+# else:
+#     try:
+#         import uvloop
 
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except ImportError:
-        pass
+#         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+#     except ImportError:
+#         pass
 
 load_dotenv()
 
