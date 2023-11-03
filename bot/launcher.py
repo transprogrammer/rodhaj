@@ -10,16 +10,10 @@ from libs.utils import RodhajLogger
 
 from rodhaj import Rodhaj
 
-# Only used for Windows development
-# if os.name == "nt":
-#     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-# else:
-#     try:
-#         import uvloop
-
-#         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-#     except ImportError:
-#         pass
+if os.name == "nt":
+    from winloop import install
+else:
+    from uvloop import install
 
 load_dotenv()
 
@@ -45,6 +39,7 @@ async def main() -> None:
 
 def launch() -> None:
     with RodhajLogger():
+        install()
         asyncio.run(main())
 
 
