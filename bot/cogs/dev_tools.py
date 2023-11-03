@@ -2,7 +2,6 @@ from typing import Literal, Optional
 
 import discord
 from cogs import EXTENSIONS
-from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 
