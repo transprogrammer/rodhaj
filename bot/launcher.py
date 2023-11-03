@@ -1,6 +1,5 @@
 import asyncio
 import os
-from pathlib import Path
 
 import asyncpg
 import discord
@@ -16,8 +15,6 @@ else:
     from uvloop import install
 
 load_dotenv()
-
-ENV_PATH = Path(__file__).parent / ".env"
 
 TOKEN = os.environ["TOKEN"]
 DEV_MODE = os.getenv("DEV_MODE") in ("True", "TRUE")
