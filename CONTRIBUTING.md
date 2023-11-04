@@ -69,7 +69,7 @@ This document goes over the process of contributing, and the setup instructions.
     poetry run python bot/launcher.py
     ```
 
-> Where are the slash commands? See the [FAQ](CONTRIBUTING.md#-Where-are-the-slash-commands?)
+> Where are the slash commands? See the [FAQ](CONTRIBUTING.md#where-are-the-slash-commands)
 
 
 
