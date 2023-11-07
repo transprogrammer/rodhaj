@@ -12,7 +12,7 @@ discord-py = {extras = ["speed"], version = "^2.3.2"}
 python-dotenv = "^1.0.0"
 uvloop = {markers = "sys_platform != \"win32\"", version = "^0.19.0"}
 winloop = {markers = "sys_platform == \"win32\"", version = "^0.0.9"}
-asyncpg = "^0.28.0"
+asyncpg = "^0.29.0"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
 psutil = "^5.9.6"
 pygit2 = "^1.13.2"
