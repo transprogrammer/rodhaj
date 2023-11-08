@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "rodhaj"
 version = "0.1.0"
-description = "Trnasprogrammer discord bot"
+description = "Transprogrammer's custom modmail bot"
 authors = ["No767 <73260931+No767@users.noreply.github.com>"]
-license = "MPL-2.0"
+license = "Apache-2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -20,11 +20,14 @@ python-dateutil = "^2.8.2"
 click = "^8.1.7"
 typing-extensions = "^4.8.0"
 
+# These are pinned by major version
+# To not get dependabot to constantly update them
+# https://python-poetry.org/docs/dependency-specification/
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^3.5.0"
-pyright = "^1.1.334"
-ruff = "^0.1.4"
-watchfiles = "^0.21.0"
+pre-commit = "^3"
+pyright = "^1.1"
+ruff = "^0.1,>=0.1.0"
+watchfiles = "^0"
 jishaku = "^2.5.2"
 
 [tool.isort]
