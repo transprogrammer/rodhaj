@@ -1,10 +1,12 @@
 # Rodhaj
 
-Transprogrammer's custom "ModMail" bot
+A improved, modern version of ModMail for Transprogrammer
 
-proto-repo for discord app
+## What is Rodhaj?
 
-**later down the road, pls do not push to main branch directly**
+Just like ModMail, Rodhaj serves to be the transprogrammer's official ModMail bot. By creating a shared inbox, it allows for users and staff to seamlessly communicate safely, securely, and privately.
+
+Unlike ModMail, this bot is fine-tuned for the needs of the transprogrammer community.
 
 ## Stuff that needs to be done
 
