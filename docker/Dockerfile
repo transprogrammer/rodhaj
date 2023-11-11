@@ -8,7 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   curl \
-  git
+  git \
+  && apt-get clean
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -26,20 +27,21 @@ RUN poetry export --output requirements.txt --without-hashes --only main
 ####################################################################################################
 FROM python:3.11-slim-bookworm
 
-RUN apt update \
-  && apt install -y --no-install-recommends \
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
   tini \
   bash \
   netcat-traditional \
   libopus-dev \
   libffi-dev \
   libsodium-dev \
-  git
+  git \
+  && apt-get clean
 
 WORKDIR /rodhaj
 COPY /bot /rodhaj/bot/
 COPY /bot/cogs /rodhaj/bot/cogs/
-COPY /bot/migrations /rodhaj/bot/migrations/
+# COPY /bot/migrations /rodhaj/bot/migrations/
 COPY /docker/start.sh /rodhaj/start.sh
 COPY /docker/wait-for /rodhaj/wait-for
 
@@ -52,7 +54,7 @@ RUN adduser --disabled-password --gecos "" rodhaj \
 
 USER rodhaj
 
-ENV PATH="${PATH}:/home/rodhaj/.local/bin"
+ENV PATH="${PATH}:${HOME}.local/bin"
 
 RUN pip install --user -r requirements.txt
 
