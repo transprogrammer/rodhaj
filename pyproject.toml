@@ -26,7 +26,7 @@ typing-extensions = "^4.8.0"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3"
 pyright = "^1.1"
-ruff = "^0.1,>=0.1.0"
+ruff = "^0.1"
 watchfiles = "^0"
 jishaku = "^2.5.2"
 
