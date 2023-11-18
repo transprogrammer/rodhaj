@@ -32,7 +32,7 @@ class Rodhaj(commands.Bot):
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="a game"
             ),
-            command_prefix="r>",
+            command_prefix=["r>", "?", "!"],
             help_command=None,
             intents=intents,
             tree_cls=RodhajCommandTree,
@@ -64,9 +64,12 @@ class Rodhaj(commands.Bot):
         for extension in EXTENSIONS:
             await self.load_extension(extension)
 
+        # Load Jishaku during production as this is what Umbra, Jeyy and others do
+        # Useful for debugging purposes
+        await self.load_extension("jishaku")
+
         if self._dev_mode is True and _fsw is True:
-            self.logger.info("Dev mode is enabled. Loading Jishaku and FSWatcher")
-            await self.load_extension("jishaku")
+            self.logger.info("Dev mode is enabled. Loading FSWatcher")
             self.loop.create_task(self.fs_watcher())
 
     async def on_ready(self):

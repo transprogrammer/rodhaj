@@ -19,6 +19,7 @@ pygit2 = "^1.13.2"
 python-dateutil = "^2.8.2"
 click = "^8.1.7"
 typing-extensions = "^4.8.0"
+environs = "^9.5.0"
 
 # These are pinned by major version
 # To not get dependabot to constantly update them

@@ -5,7 +5,6 @@ import platform
 import discord
 import psutil
 import pygit2
-from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, human_timedelta
@@ -16,7 +15,7 @@ from rodhaj import Rodhaj
 # A cog houses a category of commands
 # Unlike djs, think of commands being stored as a category,
 # which the cog is that category
-class Meta(commands.Cog):
+class Utilities(commands.Cog):
     def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
         self.process = psutil.Process()
@@ -49,8 +48,8 @@ class Meta(commands.Cog):
         )
         return "\n".join(self.format_commit(c) for c in commits)
 
-    @app_commands.command(name="about")
-    async def about(self, interaction: discord.Interaction) -> None:
+    @commands.hybrid_command(name="about")
+    async def about(self, ctx: commands.Context) -> None:
         """Shows some stats for Rodhaj"""
         total_members = 0
         total_unique = len(self.bot.users)
@@ -82,20 +81,20 @@ class Meta(commands.Cog):
         embed.add_field(name="Python Version", value=platform.python_version())
         embed.add_field(name="Version", value=str(self.bot.version))
         embed.add_field(name="Uptime", value=self.get_bot_uptime(brief=True))
-        await interaction.response.send_message(embed=embed)
+        await ctx.send(embed=embed)
 
-    @app_commands.command(name="uptime")
-    async def uptime(self, interaction: discord.Interaction) -> None:
+    @commands.hybrid_command(name="uptime")
+    async def uptime(self, ctx: commands.Context) -> None:
         """Displays the bot's uptime"""
         uptime_message = f"Uptime: {self.get_bot_uptime()}"
-        await interaction.response.send_message(uptime_message)
+        await ctx.send(uptime_message)
 
-    @app_commands.command(name="version")
-    async def version(self, interaction: discord.Interaction) -> None:
+    @commands.hybrid_command(name="version")
+    async def version(self, ctx: commands.Context) -> None:
         """Displays the current build version"""
         version_message = f"Version: {self.bot.version}"
-        await interaction.response.send_message(version_message)
+        await ctx.send(version_message)
 
 
 async def setup(bot: Rodhaj) -> None:
-    await bot.add_cog(Meta(bot))
+    await bot.add_cog(Utilities(bot))

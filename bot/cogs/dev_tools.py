@@ -14,11 +14,13 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
     def __init__(self, bot: Rodhaj):
         self.bot = bot
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        return await self.bot.is_owner(ctx.author)
+
     # Umbra's sync command
     # To learn more about it, see the link below (and ?tag ass on the dpy server):
     # https://about.abstractumbra.dev/discord.py/2023/01/29/sync-command-example.html
     @commands.guild_only()
-    @commands.is_owner()
     @commands.command(name="sync")
     async def sync(
         self,
@@ -64,7 +66,6 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @commands.guild_only()
-    @commands.is_owner()
     @commands.command(name="reload-all")
     async def reload_all(self, ctx: commands.Context) -> None:
         """Reloads all cogs. Used in production to not produce any downtime"""

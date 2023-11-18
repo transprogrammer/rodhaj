@@ -1,8 +1,14 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import discord
+from discord.ext import commands
 
 from .errors import produce_error_embed
+
+if TYPE_CHECKING:
+    from bot.rodhaj import Rodhaj
 
 NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
 
@@ -10,14 +16,14 @@ NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
 class RoboView(discord.ui.View):
     """Subclassed `discord.ui.View` that includes sane default configs"""
 
-    def __init__(self, interaction: discord.Interaction):
+    def __init__(self, ctx: commands.Context[Rodhaj]):
         super().__init__()
-        self.interaction = interaction
+        self.ctx = ctx
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         if interaction.user and interaction.user.id in (
-            self.interaction.client.application.owner.id,  # type: ignore
-            self.interaction.user.id,
+            self.ctx.bot.application.owner.id,  # type: ignore
+            self.ctx.author.id,
         ):
             return True
         await interaction.response.send_message(NO_CONTROL_MSG, ephemeral=True)
@@ -36,5 +42,5 @@ class RoboView(discord.ui.View):
         self.stop()
 
     async def on_timeout(self) -> None:
-        if self.interaction.response.is_done():
-            await self.interaction.edit_original_response(view=None)
+        self.clear_items()
+        self.stop()

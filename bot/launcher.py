@@ -4,7 +4,7 @@ import os
 import asyncpg
 import discord
 from aiohttp import ClientSession
-from dotenv import load_dotenv
+from environs import Env
 from libs.utils import RodhajLogger
 
 from rodhaj import Rodhaj
@@ -14,11 +14,13 @@ if os.name == "nt":
 else:
     from uvloop import install
 
-load_dotenv()
+# Hope not to trip pyright
+env = Env()
+env.read_env()
 
-TOKEN = os.environ["TOKEN"]
-DEV_MODE = os.getenv("DEV_MODE") in ("True", "TRUE")
-POSTGRES_URI = os.environ["POSTGRES_URI"]
+TOKEN = env("TOKEN")
+DEV_MODE = env.bool("DEV_MODE", False)
+POSTGRES_URI = env("POSTGRES_URI")
 
 intents = discord.Intents.default()
 intents.message_content = True
