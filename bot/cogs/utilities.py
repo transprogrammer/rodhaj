@@ -68,8 +68,8 @@ class Utilities(commands.Cog):
         embed.title = "About Me"
         embed.description = f"Latest Changes:\n {revisions}"
         embed.set_footer(
-            text=f"Made with discord.py v{discord.__version__}",
-            icon_url="https://cdn.discordapp.com/emojis/596577034537402378.png?size=128",
+            text=f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}",
+            icon_url="https://cdn.discordapp.com/emojis/596577034537402378.png",
         )
         embed.add_field(name="Servers Count", value=len(self.bot.guilds))
         embed.add_field(
@@ -78,7 +78,6 @@ class Utilities(commands.Cog):
         embed.add_field(
             name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
         )
-        embed.add_field(name="Python Version", value=platform.python_version())
         embed.add_field(name="Version", value=str(self.bot.version))
         embed.add_field(name="Uptime", value=self.get_bot_uptime(brief=True))
         await ctx.send(embed=embed)

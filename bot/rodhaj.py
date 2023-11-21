@@ -33,7 +33,7 @@ class Rodhaj(commands.Bot):
                 type=discord.ActivityType.watching, name="a game"
             ),
             command_prefix=["r>", "?", "!"],
-            help_command=None,
+            help_command=None,  # I need to create one
             intents=intents,
             tree_cls=RodhajCommandTree,
             *args,
