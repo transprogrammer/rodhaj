@@ -4,8 +4,20 @@ import discord
 from cogs import EXTENSIONS
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
+from libs.utils import RoboView
 
 from rodhaj import Rodhaj
+
+
+class MaybeView(RoboView):
+    def __init__(self, ctx: commands.Context) -> None:
+        super().__init__(ctx)
+
+    @discord.ui.button(label="eg")
+    async def eg(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        await interaction.response.send_message("yo nice oen", ephemeral=True)
 
 
 class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
@@ -76,6 +88,11 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
         for extension in EXTENSIONS:
             await self.bot.reload_extension(extension)
         await ctx.send("Successfully reloaded all extensions live")
+
+    @commands.command(name="view-test", hidden=True)
+    async def view_test(self, ctx: commands.Context) -> None:
+        view = MaybeView(ctx)
+        view.message = await ctx.send("yeo", view=view)
 
 
 async def setup(bot: Rodhaj):

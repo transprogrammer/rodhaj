@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 from discord.ext import commands
@@ -17,8 +17,9 @@ class RoboView(discord.ui.View):
     """Subclassed `discord.ui.View` that includes sane default configs"""
 
     def __init__(self, ctx: commands.Context[Rodhaj]):
-        super().__init__()
+        super().__init__(timeout=5.0)
         self.ctx = ctx
+        self.message: Optional[discord.Message]
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         if interaction.user and interaction.user.id in (
@@ -42,5 +43,6 @@ class RoboView(discord.ui.View):
         self.stop()
 
     async def on_timeout(self) -> None:
-        self.clear_items()
-        self.stop()
+        # This is the only way you can really edit the original message
+        if self.message:
+            await self.message.edit(view=None)
