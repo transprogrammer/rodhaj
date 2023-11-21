@@ -21,7 +21,7 @@ typing-extensions = "^4.8.0"
 environs = "^9.5.0"
 async-lru = "^2.0.4"
 msgspec = "^0.18.4"
-
+jishaku = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
 # These are pinned by major version
@@ -31,7 +31,6 @@ pre-commit = "^3"
 pyright = "^1.1"
 ruff = "^0.1"
 watchfiles = "^0"
-jishaku = "^2.5.2"
 
 [tool.isort]
 profile = 'black'

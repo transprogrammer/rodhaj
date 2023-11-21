@@ -40,8 +40,6 @@ RUN apt-get update \
 
 WORKDIR /rodhaj
 COPY /bot /rodhaj/bot/
-COPY /bot/cogs /rodhaj/bot/cogs/
-# COPY /bot/migrations /rodhaj/bot/migrations/
 COPY /docker/start.sh /rodhaj/start.sh
 COPY /docker/wait-for /rodhaj/wait-for
 
