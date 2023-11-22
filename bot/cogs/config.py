@@ -5,19 +5,29 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
-from libs.utils import is_manager
+from libs.utils import RoboContext, is_manager
 
 from rodhaj import Rodhaj
+
+UNKNOWN_ERROR_MESSAGE = (
+    "An unknown error happened. Please contact the dev team for assistance"
+)
 
 
 # Msgspec Structs are usually extremely fast compared to slotted classes
 class GuildConfig(msgspec.Struct):
     bot: Rodhaj
     id: int
+    category_id: int
     ticket_channel_id: int
     logging_channel_id: int
     logging_broadcast_url: str
     locked: bool = False
+
+    @property
+    def category_channel(self) -> Optional[discord.CategoryChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.category_id)  # type: ignore
 
     @property
     def logging_channel(self) -> Optional[discord.TextChannel]:
@@ -25,7 +35,7 @@ class GuildConfig(msgspec.Struct):
         return guild and guild.get_channel(self.logging_channel_id)  # type: ignore
 
     @property
-    def ticket_channel(self) -> Optional[discord.TextChannel]:
+    def ticket_channel(self) -> Optional[discord.ForumChannel]:
         guild = self.bot.get_guild(self.id)
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
@@ -48,7 +58,7 @@ class GuildWebhookDispatcher:
     @alru_cache()
     async def get_config(self) -> Optional[GuildConfig]:
         query = """
-        SELECT id, ticket_channel_id, logging_channel_id, logging_broadcast_url, locked
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, locked
         FROM guild_config
         WHERE id = $1;
         """
@@ -63,8 +73,8 @@ class GuildWebhookDispatcher:
 class SetupFlags(commands.FlagConverter):
     ticket_name: str = commands.flag(
         name="ticket_name",
-        default="modmail",
-        description="The name of the ticket forum. Defaults to modmail",
+        default="tickets",
+        description="The name of the ticket forum. Defaults to tickets",
     )
     log_name: str = commands.flag(
         name="log_name",
@@ -80,17 +90,29 @@ class Config(commands.Cog):
         self.bot = bot
         self.pool = self.bot.pool
 
+    @alru_cache()
+    async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
+        # Normally using the star is bad practice but...
+        # Since I don't want to write out every single column to select,
+        # we are going to use the star
+        # The guild config roughly maps to it as well
+        query = "SELECT * FROM guild_config WHERE guild_id = $1;"
+        rows = await self.pool.fetchrow(query, guild_id)
+        if rows is None:
+            return None
+        config = GuildConfig(bot=self.bot, **dict(rows))
+        return config
+
     @is_manager()
     @commands.guild_only()
     @commands.hybrid_group(name="config")
-    async def config(self, ctx: commands.Context) -> None:
+    async def config(self, ctx: RoboContext) -> None:
         """Commands to configure, setup, or delete Rodhaj"""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    # TODO: Make a delete command (just in case but shouldn't really be needed)
     @config.command(name="setup")
-    async def setup(self, ctx: commands.Context, *, flags: SetupFlags) -> None:
+    async def setup(self, ctx: RoboContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
 
         You only need to run this once
@@ -198,19 +220,26 @@ class Config(commands.Cog):
                 available_tags=forum_tags,
             )
         except discord.Forbidden:
-            await ctx.send("Missing permissions to either")
+            await ctx.send(
+                "\N{NO ENTRY SIGN} Rodhaj is missing permissions: Manage Channels and Manage Webhooks"
+            )
             return
         except discord.HTTPException:
-            await ctx.send("Some error happened")
+            await ctx.send(UNKNOWN_ERROR_MESSAGE)
             return
 
         query = """
-        INSERT INTO guild_config (id, ticket_channel_id, logging_channel_id, logging_broadcast_url)
-        VALUES ($1, $2, $3, $4);
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url)
+        VALUES ($1, $2, $3, $4, $5);
         """
         try:
             await self.pool.execute(
-                query, guild_id, ticket_channel.id, logging_channel.id, lgc_webhook.url
+                query,
+                guild_id,
+                rodhaj_category.id,
+                ticket_channel.id,
+                logging_channel.id,
+                lgc_webhook.url,
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
@@ -220,10 +249,64 @@ class Config(commands.Cog):
                 "Failed to create the channels. Please contact Noelle to figure out why (it's more than likely that the channels exist and bypassed checking the lru cache for some reason)"
             )
         else:
-            # Invalidate LRU cache
+            # Invalidate LRU cache just to clear it out
             dispatcher.get_config.cache_invalidate()
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
+
+    @config.command(name="delete")
+    async def delete(self, ctx: RoboContext) -> None:
+        """Permanently deletes Rodhaj channels and tickets."""
+        if ctx.guild is None:
+            await ctx.send("Really... This module is meant to be ran in a server")
+            return
+
+        guild_id = ctx.guild.id
+
+        dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
+        guild_config = await self.get_guild_config(guild_id)
+
+        msg = "Are you really sure that you want to delete the Rodhaj channels?"
+        confirm = await ctx.prompt(msg, timeout=300.0)
+        if confirm:
+            if guild_config is None:
+                msg = (
+                    "Could not find the guild config. Perhaps Rodhaj is not set up yet?"
+                )
+                await ctx.send(msg)
+                return
+
+            reason = f"Requested by {ctx.author.name} (ID: {ctx.author.id}) to purge Rodhaj channels"
+
+            if (
+                guild_config.logging_channel is not None
+                and guild_config.ticket_channel is not None
+                and guild_config.category_channel is not None
+            ):
+                try:
+                    await guild_config.logging_channel.delete(reason=reason)
+                    await guild_config.ticket_channel.delete(reason=reason)
+                    await guild_config.category_channel.delete(reason=reason)
+                except discord.Forbidden:
+                    await ctx.send(
+                        "\N{NO ENTRY SIGN} Rodhaj is missing permissions: Manage Channels"
+                    )
+                    return
+                except discord.HTTPException:
+                    await ctx.send(UNKNOWN_ERROR_MESSAGE)
+                    return
+
+            query = """
+            DELETE FROM guild_config WHERE guild_id = $1;
+            """
+            await self.pool.execute(query, guild_id)
+            dispatcher.get_config.cache_invalidate()
+            self.get_guild_config.cache_invalidate()
+            await ctx.send("Successfully deleted channels")
+        elif confirm is None:
+            await ctx.send("Not removing Rodhaj channels. Canceling.")
+        else:
+            await ctx.send("Cancelling.")
 
 
 async def setup(bot: Rodhaj) -> None:
