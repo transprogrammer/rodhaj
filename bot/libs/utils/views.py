@@ -3,12 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 import discord
-from discord.ext import commands
 
 from .errors import produce_error_embed
 
 if TYPE_CHECKING:
-    from bot.rodhaj import Rodhaj
+    from .context import RoboContext
 
 NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
 
@@ -16,8 +15,8 @@ NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
 class RoboView(discord.ui.View):
     """Subclassed `discord.ui.View` that includes sane default configs"""
 
-    def __init__(self, ctx: commands.Context[Rodhaj]):
-        super().__init__(timeout=5.0)
+    def __init__(self, ctx: RoboContext, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.ctx = ctx
         self.message: Optional[discord.Message]
 

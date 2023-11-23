@@ -7,7 +7,7 @@ import psutil
 import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
-from libs.utils import Embed, human_timedelta
+from libs.utils import Embed, RoboContext, human_timedelta
 
 from rodhaj import Rodhaj
 
@@ -49,7 +49,7 @@ class Utilities(commands.Cog):
         return "\n".join(self.format_commit(c) for c in commits)
 
     @commands.hybrid_command(name="about")
-    async def about(self, ctx: commands.Context) -> None:
+    async def about(self, ctx: RoboContext) -> None:
         """Shows some stats for Rodhaj"""
         total_members = 0
         total_unique = len(self.bot.users)
@@ -83,13 +83,13 @@ class Utilities(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="uptime")
-    async def uptime(self, ctx: commands.Context) -> None:
+    async def uptime(self, ctx: RoboContext) -> None:
         """Displays the bot's uptime"""
         uptime_message = f"Uptime: {self.get_bot_uptime()}"
         await ctx.send(uptime_message)
 
     @commands.hybrid_command(name="version")
-    async def version(self, ctx: commands.Context) -> None:
+    async def version(self, ctx: RoboContext) -> None:
         """Displays the current build version"""
         version_message = f"Version: {self.bot.version}"
         await ctx.send(version_message)

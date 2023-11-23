@@ -4,13 +4,13 @@ import discord
 from cogs import EXTENSIONS
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
-from libs.utils import RoboView
+from libs.utils import RoboContext, RoboView
 
 from rodhaj import Rodhaj
 
 
 class MaybeView(RoboView):
-    def __init__(self, ctx: commands.Context) -> None:
+    def __init__(self, ctx: RoboContext) -> None:
         super().__init__(ctx)
 
     @discord.ui.button(label="eg")
@@ -26,7 +26,7 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
     def __init__(self, bot: Rodhaj):
         self.bot = bot
 
-    async def cog_check(self, ctx: commands.Context) -> bool:
+    async def cog_check(self, ctx: RoboContext) -> bool:
         return await self.bot.is_owner(ctx.author)
 
     # Umbra's sync command
@@ -79,7 +79,7 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
 
     @commands.guild_only()
     @commands.command(name="reload-all")
-    async def reload_all(self, ctx: commands.Context) -> None:
+    async def reload_all(self, ctx: RoboContext) -> None:
         """Reloads all cogs. Used in production to not produce any downtime"""
         if not hasattr(self.bot, "uptime"):
             await ctx.send("Bot + exts must be up and loaded before doing this")
@@ -90,7 +90,7 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
         await ctx.send("Successfully reloaded all extensions live")
 
     @commands.command(name="view-test", hidden=True)
-    async def view_test(self, ctx: commands.Context) -> None:
+    async def view_test(self, ctx: RoboContext) -> None:
         view = MaybeView(ctx)
         view.message = await ctx.send("yeo", view=view)
 
