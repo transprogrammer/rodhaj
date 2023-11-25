@@ -1,13 +1,14 @@
 import logging
 import signal
 from pathlib import Path
+from typing import Union
 
 import asyncpg
 import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from discord.ext import commands
-from libs.utils import RodhajCommandTree
+from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
 
 _fsw = True
 try:
@@ -53,6 +54,16 @@ class Rodhaj(commands.Bot):
                 reload_file = Path(changes_list[1])
                 self.logger.info(f"Reloading extension: {reload_file.name[:-3]}")
                 await self.reload_extension(f"cogs.{reload_file.name[:-3]}")
+
+    async def get_context(
+        self, origin: Union[discord.Interaction, discord.Message], /, *, cls=RoboContext
+    ) -> RoboContext:
+        return await super().get_context(origin, cls=cls)
+
+    async def on_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ) -> None:
+        await send_error_embed(ctx, error)
 
     async def setup_hook(self) -> None:
         def stop():
