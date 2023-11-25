@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import discord
 
 from .context import RoboContext
 from .errors import produce_error_embed
-
-if TYPE_CHECKING:
-    pass
 
 NO_CONTROL_MSG = "This modal cannot be controlled by you, sorry!"
 
