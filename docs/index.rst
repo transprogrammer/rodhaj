@@ -35,3 +35,5 @@ Contributing
 ------------
 
 If you would like to contribute to Rodhaj, please read the guides below.
+
+- :docs:`dev-guide/index.rst`
