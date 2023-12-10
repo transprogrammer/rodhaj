@@ -94,6 +94,12 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
         view = MaybeView(ctx)
         view.message = await ctx.send("yeo", view=view)
 
+    @commands.command(name="webhook-test")
+    async def webhook_test(self, ctx: RoboContext) -> None:
+        url = "yee"
+        webhook = discord.Webhook.from_url(url, session=self.bot.session)
+        await webhook.send("hi there", thread=discord.Object(1182960737476419584))
+
 
 async def setup(bot: Rodhaj):
     await bot.add_cog(DevTools(bot))

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 
+from .embeds import ErrorEmbed
 from .errors import produce_error_embed
 
 if TYPE_CHECKING:
@@ -15,9 +16,10 @@ NO_CONTROL_MSG = "This view cannot be controlled by you, sorry!"
 class RoboView(discord.ui.View):
     """Subclassed `discord.ui.View` that includes sane default configs"""
 
-    def __init__(self, ctx: RoboContext, *args, **kwargs):
+    def __init__(self, ctx: RoboContext, display_message: bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ctx = ctx
+        self.display_message = display_message
         self.message: Optional[discord.Message]
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
@@ -44,4 +46,13 @@ class RoboView(discord.ui.View):
     async def on_timeout(self) -> None:
         # This is the only way you can really edit the original message
         if self.message:
+            if self.display_message:
+                embed = ErrorEmbed()
+                embed.title = "\U00002757 Timed Out"
+                embed.description = (
+                    "Timed out waiting for a response. Cancelling action..."
+                )
+                await self.message.edit(embed=embed, view=None)
+                return
+
             await self.message.edit(view=None)

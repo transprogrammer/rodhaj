@@ -1,20 +1,31 @@
+from __future__ import annotations
+
 import logging
 import signal
 from pathlib import Path
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import asyncpg
 import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
+from cogs.config import GuildWebhookDispatcher
 from discord.ext import commands
+from libs.tickets.structs import ReservedTags
+from libs.tickets.utils import get_cached_thread, get_partial_ticket
+from libs.tickets.views import TicketConfirmView
 from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
+
+if TYPE_CHECKING:
+    from cogs.tickets import Tickets
 
 _fsw = True
 try:
     from watchfiles import awatch
 except ImportError:
     _fsw = False
+
+TRANSPROGRAMMER_SERVER_ID = 1183302385020436480
 
 
 class Rodhaj(commands.Bot):
@@ -64,6 +75,57 @@ class Rodhaj(commands.Bot):
         self, ctx: commands.Context, error: commands.CommandError
     ) -> None:
         await send_error_embed(ctx, error)
+
+    async def on_message(self, message: discord.Message) -> None:
+        # Ignore all messages from the bot
+        if message.author.bot:
+            return
+
+        # Handle all DMs from here
+        if message.guild is None:
+            author = message.author
+            potential_ticket = await get_partial_ticket(author.id, self.pool)
+            ctx = await self.get_context(message)
+
+            # Represents that there is no active ticket
+            if potential_ticket.id is None:
+                # This is for the tag selection system but Noelle is still working on that
+                tickets_cog: Tickets = self.get_cog("Tickets")  # type: ignore
+                tickets_cog.reserved_tags[author.id] = ReservedTags(
+                    question=True, serious=False, private=False
+                )
+
+                embed = discord.Embed(
+                    title="Ready to create a ticket?",
+                    color=discord.Color.from_rgb(124, 252, 0),
+                )
+                embed.description = (
+                    "Are you ready to create a ticket? "
+                    "Before you click the `Confirm` button, please select the tags found in the dropdown menu. "
+                    "Doing this step is crucial as these tags are used in order to help better sort tickets for the staff team."
+                    "\n\nNote: Once you have created your ticket, this prompt will not show up again"
+                )
+
+                view = TicketConfirmView(self, ctx, tickets_cog, message.content)
+                view.message = await author.send(embed=embed, view=view)
+                return
+
+            # The thread is cached within an LRU cache to heavily speedup performance
+            cached_thread = await get_cached_thread(self, author.id)
+
+            if cached_thread is not None:
+                dispatcher = GuildWebhookDispatcher(self, cached_thread.source_guild.id)
+                webhook = await dispatcher.get_ticket_webhook()
+                if webhook is not None:
+                    await webhook.send(
+                        message.content,
+                        username=author.display_name,
+                        avatar_url=author.display_avatar.url,
+                        thread=cached_thread.thread,
+                    )
+
+            return
+        await self.process_commands(message)
 
     async def setup_hook(self) -> None:
         def stop():
