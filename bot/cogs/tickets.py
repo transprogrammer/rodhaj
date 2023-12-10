@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import uuid
-from typing import NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple, Optional
 
 import asyncpg
 import discord
@@ -7,7 +9,10 @@ from discord.ext import commands
 from libs.tickets.structs import ReservedTags, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 
-from rodhaj import Rodhaj
+if TYPE_CHECKING:
+    from libs.utils import RoboContext
+
+    from rodhaj import Rodhaj
 
 
 class TicketOutput(NamedTuple):
@@ -114,6 +119,12 @@ class Tickets(commands.Cog):
                     status=True,
                     msg="Ticket successfully created. In order to use this ticket, please continue sending messages to Rodhaj. The messages will be directed towards the appropriate ticket.",
                 )
+
+    @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
+    async def close(self, ctx: RoboContext) -> None:
+        """Closes the thread"""
+        # I'll finish this later - Noelle
+        await ctx.send("Sending close msg")
 
     @commands.Cog.listener()
     async def on_ticket_create(self):

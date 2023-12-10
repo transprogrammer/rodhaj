@@ -76,16 +76,43 @@ class Rodhaj(commands.Bot):
     ) -> None:
         await send_error_embed(ctx, error)
 
+    async def process_commands(
+        self, message: discord.Message, /, ctx: RoboContext
+    ) -> None:
+        # Probably will not get fired but just in case
+        if message.author.bot:
+            return
+
+        close_commands = ["close", "solved", "resolved"]
+        if (
+            message.guild is None
+            and ctx.command is not None
+            and ctx.invoked_with in close_commands
+        ):
+            await self.invoke(ctx)
+            return
+
+        await self.invoke(ctx)
+
     async def on_message(self, message: discord.Message) -> None:
         # Ignore all messages from the bot
         if message.author.bot:
             return
 
+        # Since we are already using an RoboContext to deal with process commands,
+        # and it's used in both instances of an DM or an guild command,
+        # It's more efficient to go ahead and fetch it first since we need it later anyways
+        ctx = await self.get_context(message)
+
         # Handle all DMs from here
         if message.guild is None:
+            # We only will process the "close" command
+            if ctx.command is not None:
+                await self.process_commands(message, ctx)
+                return
+
             author = message.author
             potential_ticket = await get_partial_ticket(author.id, self.pool)
-            ctx = await self.get_context(message)
 
             # Represents that there is no active ticket
             if potential_ticket.id is None:
@@ -125,7 +152,7 @@ class Rodhaj(commands.Bot):
                     )
 
             return
-        await self.process_commands(message)
+        await self.process_commands(message, ctx)
 
     async def setup_hook(self) -> None:
         def stop():
