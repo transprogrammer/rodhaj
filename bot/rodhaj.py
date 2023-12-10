@@ -133,7 +133,9 @@ class Rodhaj(commands.Bot):
                     "\n\nNote: Once you have created your ticket, this prompt will not show up again"
                 )
 
-                view = TicketConfirmView(self, ctx, tickets_cog, message.content)
+                view = TicketConfirmView(
+                    self, ctx, tickets_cog, message.content, TRANSPROGRAMMER_SERVER_ID
+                )
                 view.message = await author.send(embed=embed, view=view)
                 return
 

@@ -14,8 +14,6 @@ if TYPE_CHECKING:
     from bot.cogs.tickets import Tickets
     from bot.rodhaj import Rodhaj
 
-TRANSPROGRAMMER_SERVER_ID = 1183302385020436480
-
 
 class TicketConfirmView(RoboView):
     def __init__(
@@ -24,6 +22,7 @@ class TicketConfirmView(RoboView):
         ctx: RoboContext,
         cog: Tickets,
         content: str,
+        guild_id: int,
         delete_after: bool = True,
     ) -> None:
         super().__init__(ctx=ctx, display_message=False)
@@ -31,6 +30,7 @@ class TicketConfirmView(RoboView):
         self.ctx = ctx
         self.cog = cog
         self.content = content
+        self.guild_id = guild_id
         self.delete_after = delete_after
         self.pool = self.bot.pool
 
@@ -54,7 +54,7 @@ class TicketConfirmView(RoboView):
         author = self.ctx.author
         ticket = TicketThread(
             user=author,
-            location_id=TRANSPROGRAMMER_SERVER_ID,
+            location_id=self.guild_id,
             content=self.content,
             created_at=discord.utils.utcnow(),
         )
