@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, NamedTuple, Optional, TypedDict, Union
+from typing import NamedTuple, Optional, TypedDict, Union
 
 import asyncpg
 import discord
 import msgspec
-
-if TYPE_CHECKING:
-    pass
 
 
 class ReservedTags(TypedDict):
