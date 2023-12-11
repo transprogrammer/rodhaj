@@ -11,6 +11,7 @@ Rodhaj
    :hidden:
    :caption: Guides 
 
+   user-guide/index
    dev-guide/index
 
 A improved, modern version of ModMail for the Transprogrammer community.
@@ -36,4 +37,9 @@ Contributing
 
 If you would like to contribute to Rodhaj, please read the guides below.
 
-- :docs:`dev-guide/index.rst`
+- :doc:`dev-guide/index`
+
+Next Steps
+-----------
+
+- Learn about Rodhaj's features in the :doc:`user-guide/features` guide.
