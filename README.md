@@ -1,5 +1,7 @@
 # Rodhaj
 
+[![CodeQL](https://github.com/transprogrammer/rodhaj/actions/workflows/codeql.yml/badge.svg)](https://github.com/transprogrammer/rodhaj/actions/workflows/codeql.yml) [![Lint](https://github.com/transprogrammer/rodhaj/actions/workflows/lint.yml/badge.svg)](https://github.com/transprogrammer/rodhaj/actions/workflows/lint.yml) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=transprogrammer_rodhaj&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=transprogrammer_rodhaj) [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=transprogrammer_rodhaj&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=transprogrammer_rodhaj)
+
 A improved, modern version of ModMail for Transprogrammer
 
 > [!IMPORTANT]
@@ -18,11 +20,11 @@ sends a direct message to the bot, Rodhaj will create a new ticket (which is a f
 internally for staff to view. From there, each ticket is tied with a member and DMs from Rodhaj will be processed and sent to their respective tickets.
 
 To ensure that staff will be able to respond, each active staff is randomly assigned
-to a particular ticket. This ensures that tickets are evenly distributed among staff. Staff are free to swap and work on multiple tickets as needed. Once a ticket is closed, the staff will be automatically unassigned from the ticket, and a new DM to Rodhaj will prompt the user to create a new ticket.
+to a particular ticket. This ensures that tickets are evenly distributed among staff. Staff are free to swap and work on multiple tickets as needed. Once a ticket is closed, the staff will be automatically unassigned from the ticket, and a new DM to Rodhaj will prompt the user to create a new ticket. It's designed to be a replacement to ModMail.
 
 ## Contributing
 
 Contributions to Rodhaj are always welcomed. These could be as small as
 changing documentation to adding new features. If you are interested to start
-the process, please consult the [developer guide](CONTRIBUTING.md) before
+the process, please consult the [contributing guidelines](.github/CONTRIBUTING.md) before
 you get started.
