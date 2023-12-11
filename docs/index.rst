@@ -11,6 +11,7 @@ Rodhaj
    :hidden:
    :caption: Guides 
 
+   user-guide/index
    dev-guide/index
 
 A improved, modern version of ModMail for the Transprogrammer community.
@@ -20,6 +21,15 @@ but with a completely new, improved codebase and features. It works just like Re
 where users can send messages to the bot and the bot will relay it to the server's staff team. This allows
 for a process of communicating from user to staff to be streamlined, and securely done.
 
+Features
+--------
+
+Rodhaj offers these features in addition to ones found on ModMail:
+
+- Advanced tags system
+- Automatic ticket assignment (with manual override)
+- Modern touch using forum channels, webhooks, and best practices
+- Customizable settings
 
 What's Different?
 -----------------
@@ -34,4 +44,11 @@ Thus, **this bot has no invite**.
 Contributing
 ------------
 
-If you would like to contribute to Rodhaj, please read the guides below.
+If you would like to contribute to Rodhaj, please read the guide below.
+
+- :doc:`dev-guide/index`
+
+Next Steps
+-----------
+
+- Learn about Rodhaj's features in the :doc:`user-guide/features` guide.

@@ -8,4 +8,5 @@ Rodhaj offers a developer guide so future developers can easily get started with
    :maxdepth: 2
    
    intro
+   contributing
    faq
