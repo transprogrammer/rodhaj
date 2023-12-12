@@ -1,5 +1,6 @@
+===
 FAQ
----
+===
 
 This is a list of frequently asked questions. 
 If you have a question that is not answered here, 
@@ -10,8 +11,8 @@ Slash Commands
 
 Questions regarding slash commands and how they operate in ``discord.py``.
 
-Where are the slash commands?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Where Are The Slash Commands?
+-----------------------------
 
 Unlike other frameworks, discord.py **does not** automatically sync slash commands
 for you (as slash commands need to be synced to Discord and are handled by them).
@@ -28,3 +29,8 @@ such as the following:
 
 To see details information on why the practice of automatically syncing commands is bad,
 see `this gist <https://gist.github.com/No767/e65fbfdedc387457b88723595186000f>`_ for more.
+
+.. note::
+
+    If you do not understand what is syncing, 
+    please read the `syncing guide <https://gist.github.com/No767/e65fbfdedc387457b88723595186000f#a-primer-on-syncing>`_.

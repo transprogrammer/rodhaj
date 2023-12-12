@@ -5,7 +5,7 @@ Introduction
 This is the documentation for Rodhaj, the modern ModMail bot for the transprogrammer server.
 
 Software Requirements
----------------------
+=====================
 
 Before you get started, please ensure you have the following installed:
 
@@ -36,12 +36,13 @@ For a debian-based system, you can install them with the following command:
     Windows support should work but is not tested.
 
 Setup
------
+=====
 
 **Rodhaj only supports Python 3.9 or higher**
 
 .. important::
     Ensure that you are in the root of the repo throughout this process
+    and have the database running
 
 1. Fork and clone the repo
 
@@ -71,8 +72,8 @@ Setup
     poetry run python bot/launcher.py
 
 Database
-^^^^^^^^
-
+--------
+    
 The following SQL queries can be used to create the user and database:
 
 .. code-block:: sql
@@ -86,9 +87,12 @@ The following SQL queries can be used to create the user and database:
     the PostgreSQL server. If you decide not to use Docker, you 
     will need to manually create the database as shown below
 
-Basic Concepts
---------------
+Using Docker
+^^^^^^^^^^^^
 
-Rodhaj works by implementing commands, which
-are used staff. And Rodhaj takes care of assigning threads, creating tickets, etc.
-More will be provided in-depth in other parts of the documentation.
+If you decide to use Docker to run the local PostgreSQL server, then a
+pre-built Docker Compose file is provided. Simply run the following:
+
+.. code-block:: bash
+
+    docker compose -f docker-compose-dev.yml up -d
