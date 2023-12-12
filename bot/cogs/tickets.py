@@ -11,7 +11,6 @@ from libs.tickets.utils import get_cached_thread, get_partial_ticket
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
-
     from rodhaj import Rodhaj
 
 
