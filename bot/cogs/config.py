@@ -6,7 +6,6 @@ import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
 from libs.utils import RoboContext, is_manager
-
 from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
