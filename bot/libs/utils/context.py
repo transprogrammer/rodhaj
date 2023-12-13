@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class ConfirmationView(RoboView):
     def __init__(self, ctx, timeout: float, delete_after: bool):
-        super().__init__(ctx=ctx, display_message=False, timeout=timeout)
+        super().__init__(ctx=ctx, timeout=timeout)
         self.value: Optional[bool] = None
         self.delete_after = delete_after
         self.message: Optional[discord.Message] = None
@@ -69,3 +69,7 @@ class RoboContext(commands.Context):
         view.message = await self.send(message, view=view, ephemeral=delete_after)
         await view.wait()
         return view.value
+
+
+class GuildContext(RoboContext):
+    guild: discord.Guild
