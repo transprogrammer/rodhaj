@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import random
 import uuid
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
 import asyncpg
 import discord
@@ -9,13 +10,30 @@ from discord.ext import commands
 from libs.tickets.structs import ReservedTags, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 
+from .config import GuildWebhookDispatcher
+
 if TYPE_CHECKING:
     from libs.utils import RoboContext
+
     from rodhaj import Rodhaj
+
+STAFF_ROLE_ID = 1184257456419913798
+TICKET_CHANNEL = 1183305410304806922  # maybe fetch it from the DB? probably not needed
+
+
+def is_ticket_or_dm():
+    def pred(ctx: RoboContext) -> bool:
+        return (
+            isinstance(ctx.channel, discord.Thread)
+            and ctx.channel.parent_id == TICKET_CHANNEL
+        ) or ctx.guild is None
+
+    return commands.check(pred)
 
 
 class TicketOutput(NamedTuple):
     status: bool
+    ticket: discord.channel.ThreadWithMessage
     msg: str
 
 
@@ -40,6 +58,21 @@ class Tickets(commands.Cog):
     ) -> discord.Thread:
         locked_thread = await thread.edit(archived=True, locked=True, reason=reason)
         return locked_thread
+
+    def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
+        mod_role = guild.get_role(STAFF_ROLE_ID)
+        if mod_role is None:
+            return None
+
+        active_members = [
+            member
+            for member in mod_role.members
+            if member.status == discord.Status.online
+            or member.status == discord.Status.dnd
+        ]
+        # Ideally this needs to be weighted but I'm not so sure how to implement that
+        selected_mod = random.choice(active_members)  # nosec
+        return selected_mod
 
     async def create_ticket(self, ticket: TicketThread) -> Optional[TicketOutput]:
         query = """
@@ -72,10 +105,7 @@ class Tickets(commands.Cog):
 
         thread_display_id = uuid.uuid4()
         thread_name = f"{ticket.user.display_name} | {thread_display_id}"
-        content = (
-            f"{ticket.user.display_name} has submitted a ticket. The initial message is shown below:\n"
-            f"{ticket.user.display_name} ({discord.utils.format_dt(ticket.created_at)}):\n{ticket.content}"
-        )
+        content = f"({ticket.user.display_name}, {discord.utils.format_dt(ticket.created_at)})\n\n{ticket.content}"
         created_ticket = await tc.create_thread(
             name=thread_name,
             content=content,
@@ -101,6 +131,7 @@ class Tickets(commands.Cog):
                 )
                 return TicketOutput(
                     status=False,
+                    ticket=created_ticket,
                     msg="You already have an ticket. Please ensure that you have closed all tickets before creating a new one.",
                 )
             except Exception:
@@ -109,16 +140,20 @@ class Tickets(commands.Cog):
                     created_ticket[0],
                     reason=f"Failed to create ticket (User ID: {ticket.user.id})",
                 )
-                return TicketOutput(status=False, msg="Could not create ticket")
+                return TicketOutput(
+                    status=False, ticket=created_ticket, msg="Could not create ticket"
+                )
             else:
                 await tr.commit()
                 get_partial_ticket.cache_invalidate(ticket.user.id, self.pool)
                 get_cached_thread.cache_invalidate(self.bot, ticket.user.id)
                 return TicketOutput(
                     status=True,
+                    ticket=created_ticket,
                     msg="Ticket successfully created. In order to use this ticket, please continue sending messages to Rodhaj. The messages will be directed towards the appropriate ticket.",
                 )
 
+    @is_ticket_or_dm()
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
         """Closes the thread"""
@@ -126,9 +161,25 @@ class Tickets(commands.Cog):
         await ctx.send("Sending close msg")
 
     @commands.Cog.listener()
-    async def on_ticket_create(self):
-        # This is where the mod assignment will get done. As of now, i'm gonna do that later
-        self.bot.logger.info("Assigning mod to handle ticket")
+    async def on_ticket_create(
+        self,
+        guild: discord.Guild,
+        user: Union[discord.User, discord.Member],
+        ticket: discord.channel.ThreadWithMessage,
+        init_message: str,
+    ):
+        selected_mod = self.determine_active_mod(guild)
+        dispatcher = GuildWebhookDispatcher(self.bot, guild.id)
+        webhook = await dispatcher.get_webhook()
+
+        select_mod_mention = f"{selected_mod.mention}, " if selected_mod else ""
+
+        if webhook is not None:
+            msg = (
+                f"{select_mod_mention}{user.display_name} has created a ticket at {ticket.thread.mention}. The initial message has been provided below:\n\n"
+                f"{init_message}"
+            )
+            await webhook.send(content=msg)
 
 
 async def setup(bot: Rodhaj) -> None:

@@ -22,15 +22,15 @@ class TicketConfirmView(RoboView):
         ctx: RoboContext,
         cog: Tickets,
         content: str,
-        guild_id: int,
+        guild: discord.Guild,
         delete_after: bool = True,
     ) -> None:
-        super().__init__(ctx=ctx, display_message=False)
+        super().__init__(ctx=ctx, timeout=300.0)
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
         self.content = content
-        self.guild_id = guild_id
+        self.guild = guild
         self.delete_after = delete_after
         self.pool = self.bot.pool
 
@@ -54,7 +54,7 @@ class TicketConfirmView(RoboView):
         author = self.ctx.author
         ticket = TicketThread(
             user=author,
-            location_id=self.guild_id,
+            location_id=self.guild.id,
             content=self.content,
             created_at=discord.utils.utcnow(),
         )
@@ -67,7 +67,13 @@ class TicketConfirmView(RoboView):
             )
             return
 
-        self.bot.dispatch("ticket_create")
+        self.bot.dispatch(
+            "ticket_create",
+            self.guild,
+            self.ctx.author,
+            created_ticket.ticket,
+            self.content,
+        )
         embed = discord.Embed(
             title="\U0001f3ab Ticket created", color=discord.Color.from_rgb(124, 252, 0)
         )
@@ -100,5 +106,5 @@ class TicketConfirmView(RoboView):
                 "Timed out waiting for a response. Not creating a ticket. "
                 "In order to create a ticket, please resend your message and properly confirm"
             )
-            await self.message.edit(content=None, embed=embed, view=None)
+            await self.message.edit(embed=embed, view=None, delete_after=60.0)
             return

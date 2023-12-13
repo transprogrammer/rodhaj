@@ -121,6 +121,9 @@ class Rodhaj(commands.Bot):
                 tickets_cog.reserved_tags[author.id] = ReservedTags(
                     question=True, serious=False, private=False
                 )
+                guild = self.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
+                    await self.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
+                )
 
                 embed = discord.Embed(
                     title="Ready to create a ticket?",
@@ -133,9 +136,7 @@ class Rodhaj(commands.Bot):
                     "\n\nNote: Once you have created your ticket, this prompt will not show up again"
                 )
 
-                view = TicketConfirmView(
-                    self, ctx, tickets_cog, message.content, TRANSPROGRAMMER_SERVER_ID
-                )
+                view = TicketConfirmView(self, ctx, tickets_cog, message.content, guild)
                 view.message = await author.send(embed=embed, view=view)
                 return
 

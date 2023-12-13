@@ -7,6 +7,12 @@ class Embed(discord.Embed):
         super().__init__(**kwargs)
 
 
+class LoggingEmbed(discord.Embed):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("color", discord.Color.from_rgb(212, 252, 255))
+        super().__init__(**kwargs)
+
+
 class ErrorEmbed(discord.Embed):
     def __init__(self, **kwargs):
         kwargs.setdefault("color", discord.Color.from_rgb(214, 6, 6))
