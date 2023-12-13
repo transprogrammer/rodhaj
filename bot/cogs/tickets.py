@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import uuid
+from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
 import asyncpg
@@ -16,7 +17,10 @@ if TYPE_CHECKING:
     from libs.utils import RoboContext
     from rodhaj import Rodhaj
 
-STAFF_ROLE_ID = 1184257456419913798
+from rodhaj import TRANSPROGRAMMER_SERVER_ID
+
+STAFF_ROLE = 1184257456419913798
+MOD_ROLE = 1  # later this is the correct one
 TICKET_CHANNEL = 1183305410304806922  # maybe fetch it from the DB? probably not needed
 
 
@@ -36,6 +40,15 @@ class TicketOutput(NamedTuple):
     msg: str
 
 
+class ClosedEmbed(discord.Embed):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("color", discord.Color.from_rgb(138, 255, 157))
+        kwargs.setdefault("title", "\U00002705 Ticket Closed")
+        kwargs.setdefault("timestamp", discord.utils.utcnow())
+        super().__init__(**kwargs)
+        self.set_footer(text="Ticket closed at")
+
+
 class Tickets(commands.Cog):
     """The main central ticket management hub"""
 
@@ -52,14 +65,84 @@ class Tickets(commands.Cog):
             return
         return conf[type]
 
+    @lru_cache(maxsize=64)
+    def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
+        mod_role = guild.get_role(
+            STAFF_ROLE
+        )  # TODO: change the STAFF_ROLE_ID to the correct one
+        if mod_role is None:
+            return None
+        return [member for member in mod_role.members]
+
     async def lock_ticket(
         self, thread: discord.Thread, reason: Optional[str] = None
     ) -> discord.Thread:
+        # TODO: Add the solved tag in here
         locked_thread = await thread.edit(archived=True, locked=True, reason=reason)
         return locked_thread
 
+    async def close_ticket(
+        self,
+        user: Union[discord.User, discord.Member, int],
+        connection: Union[asyncpg.Pool, asyncpg.Connection],
+    ) -> Optional[discord.Thread]:
+        if isinstance(user, int):
+            user = self.bot.get_user(user) or (await self.bot.fetch_user(user))
+
+        connection = connection or self.pool
+        owned_ticket = await get_cached_thread(self.bot, user.id, connection)
+        if owned_ticket is None:
+            return None
+        thread = owned_ticket.thread
+
+        reason = f"Ticket closed by {user.name} (ID: {user.id})"
+        await self.lock_ticket(thread, reason)
+
+        return thread
+
+    async def admin_close_ticket(
+        self, ctx: RoboContext, thread_id: int, pool: asyncpg.Pool
+    ):
+        get_owner_id_query = """
+        SELECT owner_id
+        FROM tickets
+        WHERE thread_id = $1 AND location_id = $2;
+        """
+
+        delete_query = """
+        DELETE FROM tickets
+        WHERE thread_id = $1 AND owner_id = $2;
+        """
+
+        async with pool.acquire() as conn:
+            owner_id = await conn.fetchval(
+                get_owner_id_query, thread_id, TRANSPROGRAMMER_SERVER_ID
+            )
+
+            if owner_id is None:
+                await ctx.send("Failed to close the ticket. Is there a ticket at all?")
+                return
+
+            await self.close_ticket(owner_id, conn)
+
+            await conn.execute(delete_query, thread_id, owner_id)
+            get_cached_thread.cache_invalidate()
+            get_partial_ticket.cache_invalidate()
+
+            user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
+
+            ticket_description = "This ticket is now closed. Reopening and messaging in the thread will have no effect."
+            user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
+            await user.send(embed=ClosedEmbed(description=user_description))
+            await ctx.send(embed=ClosedEmbed(description=ticket_description))
+            return
+
+    async def tick_post(self, ctx: RoboContext) -> None:
+        await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
+        return
+
     def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
-        mod_role = guild.get_role(STAFF_ROLE_ID)
+        mod_role = guild.get_role(STAFF_ROLE)
         if mod_role is None:
             return None
 
@@ -144,8 +227,8 @@ class Tickets(commands.Cog):
                 )
             else:
                 await tr.commit()
-                get_partial_ticket.cache_invalidate(ticket.user.id, self.pool)
-                get_cached_thread.cache_invalidate(self.bot, ticket.user.id)
+                get_partial_ticket.cache_invalidate()
+                get_cached_thread.cache_invalidate()
                 return TicketOutput(
                     status=True,
                     ticket=created_ticket,
@@ -157,7 +240,48 @@ class Tickets(commands.Cog):
     async def close(self, ctx: RoboContext) -> None:
         """Closes the thread"""
         # I'll finish this later - Noelle
-        await ctx.send("Sending close msg")
+        query = """
+        DELETE FROM tickets
+        WHERE thread_id = $1 AND owner_id = $2;
+        """
+        guild = self.bot.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
+            await self.bot.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
+        )
+        staff_members = self.get_staff(guild)
+
+        if staff_members is None:
+            await ctx.send("There are apparently no staff members found?")
+            return
+
+        # TODO: Add the hierarchy system here
+        staff_ids = [member.id for member in staff_members]
+
+        # The last two checks are not needed but eh just in case
+        # Ensures that it in fact, a ticket
+        if (
+            ctx.author.id in staff_ids
+            and isinstance(ctx.channel, discord.Thread)
+            and ctx.channel.parent_id == TICKET_CHANNEL
+        ):
+            await self.tick_post(ctx)
+            await self.admin_close_ticket(ctx, ctx.channel.id, self.pool)
+            return
+
+        # We know that essentially the only people who get to here
+        # are the ticket thread owners themselves.
+        async with self.pool.acquire() as conn:
+            author_id = ctx.author.id
+            await self.tick_post(ctx)
+            thread = await self.close_ticket(ctx.author, conn)
+            if thread is None:
+                await ctx.send(
+                    "The ticket can not be found. Are you sure you have an open ticket?"
+                )
+                return
+
+            await conn.execute(query, thread.id, author_id)
+            get_cached_thread.cache_invalidate()
+            get_partial_ticket.cache_invalidate()
 
     @commands.Cog.listener()
     async def on_ticket_create(

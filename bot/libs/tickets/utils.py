@@ -36,7 +36,9 @@ async def register_user(
 
 
 @alru_cache(maxsize=64)
-async def get_partial_ticket(user_id: int, pool: asyncpg.Pool) -> PartialTicket:
+async def get_partial_ticket(
+    user_id: int, connection: Union[asyncpg.Pool, asyncpg.Connection]
+) -> PartialTicket:
     """Provides an `PartialTicket` object in order to perform various actions
 
     The `PartialTicket` represents a partial record of an ticket found in the
@@ -58,7 +60,7 @@ async def get_partial_ticket(user_id: int, pool: asyncpg.Pool) -> PartialTicket:
     FROM tickets
     WHERE owner_id = $1;
     """
-    rows = await pool.fetchrow(query, user_id)
+    rows = await connection.fetchrow(query, user_id)
     if rows is None:
         # This represents no active ticket
         return PartialTicket()
@@ -66,7 +68,9 @@ async def get_partial_ticket(user_id: int, pool: asyncpg.Pool) -> PartialTicket:
 
 
 @alru_cache(maxsize=64)
-async def get_cached_thread(bot: Rodhaj, user_id: int) -> Optional[ThreadWithGuild]:
+async def get_cached_thread(
+    bot: Rodhaj, user_id: int, connection: Union[asyncpg.Pool, asyncpg.Connection]
+) -> Optional[ThreadWithGuild]:
     """Obtains an cached thread from the tickets channel
 
     This has a small LRU cache (size of 64) so the cache is forced to refresh its
@@ -86,7 +90,8 @@ async def get_cached_thread(bot: Rodhaj, user_id: int) -> Optional[ThreadWithGui
     INNER JOIN guild_config ON guild_config.id = tickets.location_id
     WHERE tickets.owner_id  = $1;
     """
-    record = await bot.pool.fetchrow(query, user_id)
+    connection = connection or bot.pool
+    record = await connection.fetchrow(query, user_id)
     if record is None:
         return None
     forum_channel = bot.get_channel(record["ticket_channel_id"]) or (
