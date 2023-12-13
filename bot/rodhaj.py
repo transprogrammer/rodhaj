@@ -141,7 +141,7 @@ class Rodhaj(commands.Bot):
                 return
 
             # The thread is cached within an LRU cache to heavily speedup performance
-            cached_thread = await get_cached_thread(self, author.id)
+            cached_thread = await get_cached_thread(self, author.id, self.pool)
 
             if cached_thread is not None:
                 dispatcher = GuildWebhookDispatcher(self, cached_thread.source_guild.id)
