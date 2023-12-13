@@ -106,5 +106,5 @@ class TicketConfirmView(RoboView):
                 "Timed out waiting for a response. Not creating a ticket. "
                 "In order to create a ticket, please resend your message and properly confirm"
             )
-            await self.message.edit(embed=embed, view=None, delete_after=60.0)
+            await self.message.edit(embed=embed, view=None, delete_after=15.0)
             return
