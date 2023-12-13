@@ -135,11 +135,9 @@ class Tickets(commands.Cog):
             user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
             await user.send(embed=ClosedEmbed(description=user_description))
             await ctx.send(embed=ClosedEmbed(description=ticket_description))
-            return
 
     async def tick_post(self, ctx: RoboContext) -> None:
         await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
-        return
 
     def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
         mod_role = guild.get_role(STAFF_ROLE)
