@@ -790,13 +790,13 @@ files = [
 
 [[package]]
 name = "environs"
-version = "9.5.0"
+version = "10.0.0"
 description = "simplified environment variable parsing"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "environs-9.5.0-py2.py3-none-any.whl", hash = "sha256:1e549569a3de49c05f856f40bce86979e7d5ffbbc4398e7f338574c220189124"},
-    {file = "environs-9.5.0.tar.gz", hash = "sha256:a76307b36fbe856bdca7ee9161e6c466fd7fcffc297109a118c59b54e27e30c9"},
+    {file = "environs-10.0.0-py3-none-any.whl", hash = "sha256:41aa9d9fdb52953d3083638dca76b157e32714ffc67251d855ade241dee8a3f8"},
+    {file = "environs-10.0.0.tar.gz", hash = "sha256:a8968e7d5b2b656cc17f6273d4b312654397ffa7ab0875c33c36699e1106a374"},
 ]
 
 [package.dependencies]
@@ -804,10 +804,10 @@ marshmallow = ">=3.0.0"
 python-dotenv = "*"
 
 [package.extras]
-dev = ["dj-database-url", "dj-email-url", "django-cache-url", "flake8 (==4.0.1)", "flake8-bugbear (==21.9.2)", "mypy (==0.910)", "pre-commit (>=2.4,<3.0)", "pytest", "tox"]
+dev = ["environs[lint,tests]", "tox"]
 django = ["dj-database-url", "dj-email-url", "django-cache-url"]
-lint = ["flake8 (==4.0.1)", "flake8-bugbear (==21.9.2)", "mypy (==0.910)", "pre-commit (>=2.4,<3.0)"]
-tests = ["dj-database-url", "dj-email-url", "django-cache-url", "pytest"]
+lint = ["flake8 (==6.1.0)", "flake8-bugbear (==23.11.28)", "mypy (==0.910)", "pre-commit (>=3.6,<4.0)"]
+tests = ["environs[django]", "pytest"]
 
 [[package]]
 name = "exceptiongroup"
@@ -2296,4 +2296,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "56c649cc419ca6b45160b84a811f445e64305645c9cbdfad85b6834297169ac6"
+content-hash = "b6a4f70fc65ea9f0a3fca0ed16e599e94debaba2cbdd000c609c5e46d606dcf4"
