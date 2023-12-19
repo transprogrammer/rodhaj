@@ -10,6 +10,7 @@ import discord
 from discord.ext import commands
 from libs.tickets.structs import ReservedTags, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
+from libs.utils.embeds import LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
@@ -289,18 +290,15 @@ class Tickets(commands.Cog):
         ticket: discord.channel.ThreadWithMessage,
         init_message: str,
     ):
-        selected_mod = self.determine_active_mod(guild)
         dispatcher = GuildWebhookDispatcher(self.bot, guild.id)
         webhook = await dispatcher.get_webhook()
 
-        select_mod_mention = f"{selected_mod.mention}, " if selected_mod else ""
-
         if webhook is not None:
-            msg = (
-                f"{select_mod_mention}{user.display_name} has created a ticket at {ticket.thread.mention}. The initial message has been provided below:\n\n"
-                f"{init_message}"
-            )
-            await webhook.send(content=msg)
+            embed = LoggingEmbed(title="\U0001f3ab New Ticket")
+            embed.description = init_message
+            embed.add_field(name="Owner", value=user.mention)
+            embed.add_field(name="Link", value=ticket.thread.mention)
+            await webhook.send(embed=embed)
 
 
 async def setup(bot: Rodhaj) -> None:

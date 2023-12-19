@@ -102,3 +102,18 @@ async def get_cached_thread(
         if thread is None:
             return None
         return ThreadWithGuild(thread, thread.guild)
+
+
+def safe_content(content: str, amount: int = 4000) -> str:
+    """Safely sends the content by reducing the length
+    to avoid errors
+
+    Args:
+        content (str): Content to be sent
+
+    Returns:
+        str: A safe version of the content
+    """
+    if len(content) > amount:
+        return content[: amount - 3] + "..."
+    return content

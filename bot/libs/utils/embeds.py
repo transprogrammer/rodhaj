@@ -10,6 +10,7 @@ class Embed(discord.Embed):
 class LoggingEmbed(discord.Embed):
     def __init__(self, **kwargs):
         kwargs.setdefault("color", discord.Color.from_rgb(212, 252, 255))
+        kwargs.setdefault("timestamp", discord.utils.utcnow())
         super().__init__(**kwargs)
 
 

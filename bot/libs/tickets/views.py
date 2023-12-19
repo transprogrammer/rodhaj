@@ -6,7 +6,7 @@ import discord
 from libs.tickets.structs import TicketThread
 from libs.utils import ErrorEmbed, RoboView
 
-from .utils import register_user
+from .utils import register_user, safe_content
 
 if TYPE_CHECKING:
     from libs.utils.context import RoboContext
@@ -72,7 +72,7 @@ class TicketConfirmView(RoboView):
             self.guild,
             self.ctx.author,
             created_ticket.ticket,
-            self.content,
+            safe_content(self.content),
         )
         embed = discord.Embed(
             title="\U0001f3ab Ticket created", color=discord.Color.from_rgb(124, 252, 0)
@@ -81,7 +81,7 @@ class TicketConfirmView(RoboView):
 
         if self.message:
             await self.message.edit(
-                content=None, embed=embed, view=None, delete_after=15.0
+                content=None, embed=embed, view=None, delete_after=5.0
             )
 
     @discord.ui.button(
@@ -106,5 +106,5 @@ class TicketConfirmView(RoboView):
                 "Timed out waiting for a response. Not creating a ticket. "
                 "In order to create a ticket, please resend your message and properly confirm"
             )
-            await self.message.edit(embed=embed, view=None, delete_after=15.0)
+            await self.message.edit(embed=embed, view=None)
             return
