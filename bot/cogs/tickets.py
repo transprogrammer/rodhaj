@@ -186,14 +186,13 @@ class Tickets(commands.Cog):
             await self.close_ticket(owner_id, conn, ctx.author)
 
             await conn.execute(delete_query, thread_id, owner_id)
-            get_cached_thread.cache_invalidate()
-            get_partial_ticket.cache_invalidate()
+            get_cached_thread.cache_invalidate(self.bot, ctx.author.id, conn)
+            get_partial_ticket.cache_invalidate(ctx.author.id, conn)
 
             user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
 
             ticket_description = "This ticket is now closed. Reopening and messaging in the thread will have no effect."
             user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
-            self.logger.info(f"Sending to user: {user}")
             await user.send(embed=ClosedEmbed(description=user_description))
             await ctx.send(embed=ClosedEmbed(description=ticket_description))
 
@@ -299,19 +298,21 @@ class Tickets(commands.Cog):
         if await self.can_admin_close_ticket(ctx):
             await self.admin_close_ticket(ctx, ctx.channel.id, self.pool)
             return
-        elif await self.can_close_ticket(ctx, self.pool):
-            await self.tick_post(ctx)
-            closed_ticket = await self.close_ticket(ctx.author, self.pool)
 
-            if closed_ticket is None:
-                await ctx.send(
-                    "The ticket can not be found. Are you sure you have an open ticket?"
-                )
-                return
+        async with self.pool.acquire() as conn:
+            if await self.can_close_ticket(ctx, conn):
+                await self.tick_post(ctx)
+                closed_ticket = await self.close_ticket(ctx.author, conn)
 
-            await self.pool.execute(query, closed_ticket.id, ctx.author.id)
-            get_cached_thread.cache_invalidate()
-            get_partial_ticket.cache_invalidate()
+                if closed_ticket is None:
+                    await ctx.send(
+                        "The ticket can not be found. Are you sure you have an open ticket?"
+                    )
+                    return
+
+                await conn.execute(query, closed_ticket.id, ctx.author.id)
+                get_cached_thread.cache_invalidate(self.bot, ctx.author.id, conn)
+                get_partial_ticket.cache_invalidate(ctx.author.id, conn)
 
     @commands.Cog.listener()
     async def on_ticket_create(
