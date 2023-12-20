@@ -198,6 +198,7 @@ class Tickets(commands.Cog):
             await ctx.send(embed=ClosedEmbed(description=ticket_description))
 
     ### Creation of tickets
+
     async def create_ticket(self, ticket: TicketThread) -> Optional[TicketOutput]:
         query = """
         SELECT ticket_channel_id
@@ -294,25 +295,21 @@ class Tickets(commands.Cog):
         DELETE FROM tickets
         WHERE thread_id = $1 AND owner_id = $2;
         """
-        thread = await get_cached_thread(self.bot, ctx.author.id, self.pool)
-
-        status = await self.can_close_ticket(ctx, self.pool)
-        self.logger.info(f"can close ticket: {status}")
 
         if await self.can_admin_close_ticket(ctx):
             await self.admin_close_ticket(ctx, ctx.channel.id, self.pool)
             return
         elif await self.can_close_ticket(ctx, self.pool):
             await self.tick_post(ctx)
-            thread = await self.close_ticket(ctx.author, self.pool)
+            closed_ticket = await self.close_ticket(ctx.author, self.pool)
 
-            if thread is None:
+            if closed_ticket is None:
                 await ctx.send(
                     "The ticket can not be found. Are you sure you have an open ticket?"
                 )
                 return
 
-            await self.pool.execute(query, thread.id, ctx.author.id)
+            await self.pool.execute(query, closed_ticket.id, ctx.author.id)
             get_cached_thread.cache_invalidate()
             get_partial_ticket.cache_invalidate()
 
