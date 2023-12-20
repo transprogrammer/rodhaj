@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 import asyncpg
 import discord
 from discord.ext import commands
+from discord.utils import format_dt, utcnow
 from libs.tickets.structs import ReservedTags, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.utils.embeds import LoggingEmbed
@@ -66,6 +67,41 @@ class Tickets(commands.Cog):
             return
         return conf[type]
 
+    async def can_close_ticket(
+        self, ctx: RoboContext, connection: Union[asyncpg.Pool, asyncpg.Connection]
+    ):
+        connection = connection or self.pool
+        partial_ticket = await get_partial_ticket(ctx.author.id, connection)
+
+        if (
+            ctx.guild is None
+            and partial_ticket.id is not None
+            and partial_ticket.owner_id == ctx.author.id
+        ):
+            return True
+
+        return False
+
+    async def can_admin_close_ticket(self, ctx: RoboContext) -> bool:
+        guild = self.bot.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
+            await self.bot.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
+        )
+        staff_members = self.get_staff(guild)
+
+        if staff_members is None:
+            return False
+
+        # TODO: Add the hierarchy system here
+        staff_ids = [member.id for member in staff_members]
+        from_ticket_channel = (
+            isinstance(ctx.channel, discord.Thread)
+            and ctx.channel.parent_id == TICKET_CHANNEL
+        )
+
+        if ctx.author.id in staff_ids and from_ticket_channel is True:
+            return True
+        return False
+
     @lru_cache(maxsize=64)
     def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
         mod_role = guild.get_role(
@@ -82,10 +118,15 @@ class Tickets(commands.Cog):
         locked_thread = await thread.edit(archived=True, locked=True, reason=reason)
         return locked_thread
 
+    async def obtain_webhook(self, guild_id: int) -> Optional[discord.Webhook]:
+        dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
+        return await dispatcher.get_webhook()
+
     async def close_ticket(
         self,
         user: Union[discord.User, discord.Member, int],
         connection: Union[asyncpg.Pool, asyncpg.Connection],
+        author: Optional[Union[discord.User, discord.Member]] = None,
     ) -> Optional[discord.Thread]:
         if isinstance(user, int):
             user = self.bot.get_user(user) or (await self.bot.fetch_user(user))
@@ -98,6 +139,7 @@ class Tickets(commands.Cog):
 
         reason = f"Ticket closed by {user.name} (ID: {user.id})"
         await self.lock_ticket(thread, reason)
+        self.bot.dispatch("ticket_close", thread.guild, user, thread, author)
 
         return thread
 
@@ -124,7 +166,7 @@ class Tickets(commands.Cog):
                 await ctx.send("Failed to close the ticket. Is there a ticket at all?")
                 return
 
-            await self.close_ticket(owner_id, conn)
+            await self.close_ticket(owner_id, conn, ctx.author)
 
             await conn.execute(delete_query, thread_id, owner_id)
             get_cached_thread.cache_invalidate()
@@ -134,6 +176,7 @@ class Tickets(commands.Cog):
 
             ticket_description = "This ticket is now closed. Reopening and messaging in the thread will have no effect."
             user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
+            self.logger.info(f"Sending to user: {user}")
             await user.send(embed=ClosedEmbed(description=user_description))
             await ctx.send(embed=ClosedEmbed(description=ticket_description))
 
@@ -238,47 +281,29 @@ class Tickets(commands.Cog):
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
         """Closes the thread"""
-        # I'll finish this later - Noelle
         query = """
         DELETE FROM tickets
         WHERE thread_id = $1 AND owner_id = $2;
         """
-        guild = self.bot.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
-            await self.bot.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
-        )
-        staff_members = self.get_staff(guild)
+        thread = await get_cached_thread(self.bot, ctx.author.id, self.pool)
 
-        if staff_members is None:
-            await ctx.send("There are apparently no staff members found?")
-            return
+        status = await self.can_close_ticket(ctx, self.pool)
+        self.logger.info(f"can close ticket: {status}")
 
-        # TODO: Add the hierarchy system here
-        staff_ids = [member.id for member in staff_members]
-
-        # The last two checks are not needed but eh just in case
-        # Ensures that it in fact, a ticket
-        if (
-            ctx.author.id in staff_ids
-            and isinstance(ctx.channel, discord.Thread)
-            and ctx.channel.parent_id == TICKET_CHANNEL
-        ):
-            await self.tick_post(ctx)
+        if await self.can_admin_close_ticket(ctx):
             await self.admin_close_ticket(ctx, ctx.channel.id, self.pool)
             return
-
-        # We know that essentially the only people who get to here
-        # are the ticket thread owners themselves.
-        async with self.pool.acquire() as conn:
-            author_id = ctx.author.id
+        elif await self.can_close_ticket(ctx, self.pool):
             await self.tick_post(ctx)
-            thread = await self.close_ticket(ctx.author, conn)
+            thread = await self.close_ticket(ctx.author, self.pool)
+
             if thread is None:
                 await ctx.send(
                     "The ticket can not be found. Are you sure you have an open ticket?"
                 )
                 return
 
-            await conn.execute(query, thread.id, author_id)
+            await self.pool.execute(query, thread.id, ctx.author.id)
             get_cached_thread.cache_invalidate()
             get_partial_ticket.cache_invalidate()
 
@@ -289,15 +314,33 @@ class Tickets(commands.Cog):
         user: Union[discord.User, discord.Member],
         ticket: discord.channel.ThreadWithMessage,
         init_message: str,
-    ):
-        dispatcher = GuildWebhookDispatcher(self.bot, guild.id)
-        webhook = await dispatcher.get_webhook()
+    ) -> None:
+        webhook = await self.obtain_webhook(guild.id)
 
         if webhook is not None:
             embed = LoggingEmbed(title="\U0001f3ab New Ticket")
             embed.description = init_message
             embed.add_field(name="Owner", value=user.mention)
             embed.add_field(name="Link", value=ticket.thread.mention)
+            await webhook.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_ticket_close(
+        self,
+        guild: discord.Guild,
+        user: Union[discord.User, discord.Member],
+        ticket: discord.Thread,
+        author: Optional[Union[discord.User, discord.Member]] = None,
+    ) -> None:
+        webhook = await self.obtain_webhook(guild.id)
+
+        if webhook is not None:
+            embed = LoggingEmbed(title="\U0001f512 Ticket Closed")
+            embed.description = f"The ticket has closed at {format_dt(utcnow())}"
+            if author is not None:
+                embed.add_field(name="Closed By", value=author.mention)
+            embed.add_field(name="Owner", value=user.mention)
+            embed.add_field(name="Link", value=ticket.mention)
             await webhook.send(embed=embed)
 
 

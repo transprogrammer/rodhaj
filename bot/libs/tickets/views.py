@@ -99,6 +99,8 @@ class TicketConfirmView(RoboView):
 
     async def on_timeout(self) -> None:
         # This is the only way you can really edit the original message
+        # There is a bug here, where the message first gets edited and the timeout gets called
+        # thus editing an unknown message
         if self.message:
             embed = ErrorEmbed()
             embed.title = "\U00002757 Timed Out"
