@@ -67,6 +67,34 @@ class Tickets(commands.Cog):
             return
         return conf[type]
 
+    #### Determining active mods
+
+    @lru_cache(maxsize=64)
+    def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
+        mod_role = guild.get_role(
+            STAFF_ROLE
+        )  # TODO: change the STAFF_ROLE_ID to the correct one
+        if mod_role is None:
+            return None
+        return [member for member in mod_role.members]
+
+    def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
+        mod_role = guild.get_role(STAFF_ROLE)
+        if mod_role is None:
+            return None
+
+        active_members = [
+            member
+            for member in mod_role.members
+            if member.status == discord.Status.online
+            or member.status == discord.Status.dnd
+        ]
+        # Ideally this needs to be weighted but I'm not so sure how to implement that
+        selected_mod = random.choice(active_members)  # nosec
+        return selected_mod
+
+    ### Conditions for closing tickets
+
     async def can_close_ticket(
         self, ctx: RoboContext, connection: Union[asyncpg.Pool, asyncpg.Connection]
     ):
@@ -102,14 +130,7 @@ class Tickets(commands.Cog):
             return True
         return False
 
-    @lru_cache(maxsize=64)
-    def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
-        mod_role = guild.get_role(
-            STAFF_ROLE
-        )  # TODO: change the STAFF_ROLE_ID to the correct one
-        if mod_role is None:
-            return None
-        return [member for member in mod_role.members]
+    ### CLosing and locking tickets
 
     async def lock_ticket(
         self, thread: discord.Thread, reason: Optional[str] = None
@@ -117,10 +138,6 @@ class Tickets(commands.Cog):
         # TODO: Add the solved tag in here
         locked_thread = await thread.edit(archived=True, locked=True, reason=reason)
         return locked_thread
-
-    async def obtain_webhook(self, guild_id: int) -> Optional[discord.Webhook]:
-        dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
-        return await dispatcher.get_webhook()
 
     async def close_ticket(
         self,
@@ -180,24 +197,7 @@ class Tickets(commands.Cog):
             await user.send(embed=ClosedEmbed(description=user_description))
             await ctx.send(embed=ClosedEmbed(description=ticket_description))
 
-    async def tick_post(self, ctx: RoboContext) -> None:
-        await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
-
-    def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
-        mod_role = guild.get_role(STAFF_ROLE)
-        if mod_role is None:
-            return None
-
-        active_members = [
-            member
-            for member in mod_role.members
-            if member.status == discord.Status.online
-            or member.status == discord.Status.dnd
-        ]
-        # Ideally this needs to be weighted but I'm not so sure how to implement that
-        selected_mod = random.choice(active_members)  # nosec
-        return selected_mod
-
+    ### Creation of tickets
     async def create_ticket(self, ticket: TicketThread) -> Optional[TicketOutput]:
         query = """
         SELECT ticket_channel_id
@@ -276,6 +276,15 @@ class Tickets(commands.Cog):
                     ticket=created_ticket,
                     msg="Ticket successfully created. In order to use this ticket, please continue sending messages to Rodhaj. The messages will be directed towards the appropriate ticket.",
                 )
+
+    ### Misc Utils
+
+    async def obtain_webhook(self, guild_id: int) -> Optional[discord.Webhook]:
+        dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
+        return await dispatcher.get_webhook()
+
+    async def tick_post(self, ctx: RoboContext) -> None:
+        await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
 
     @is_ticket_or_dm()
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
