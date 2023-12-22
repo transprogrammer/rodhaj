@@ -30,8 +30,7 @@ class DmCommunications(commands.Cog):
         self._bot = bot
         self._pool = bot.pool
 
-    @staticmethod
-    async def handle_user_no_thread(message: Message):
+    async def handle_user_no_thread(self, message: Message):
         await message.reply(
             "Seems like you do not have an active thread. "
             + "Would you want to create one?",
