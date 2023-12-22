@@ -40,9 +40,9 @@ class DmCommunications(commands.Cog):
 
     async def handle_dm(self, message: Message):
         query = """
-        select threadid
-        from active_user_threads
-        where userid = $1
+        SELECT id
+        FROM tickets
+        WHERE owner_id = $1
         """
         row = await self._pool.fetchrow(query, message.author.id)
         if row is None:
