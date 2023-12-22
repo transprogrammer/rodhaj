@@ -51,7 +51,7 @@ class DmCommunications(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: Message):
         if isinstance(message.channel, DMChannel):
-            if message.author not in self._bot.users:
+            if not self._bot.user_is_this_bot(message.author):
                 await self.handle_dm(message)
 
 
