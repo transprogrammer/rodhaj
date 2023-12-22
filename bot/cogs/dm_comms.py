@@ -1,28 +1,6 @@
-import discord
-from discord import DMChannel, Interaction, Message
+from discord import DMChannel, Message
 from discord.ext import commands
-from discord.ui import Button, button
 from rodhaj import Rodhaj
-
-
-class StubView(discord.ui.View):
-    def __init__(self, base_message: Message):
-        super().__init__(timeout=30)
-        self._base_msg = base_message
-        self._replied = False
-
-    async def on_timeout(self) -> None:
-        if not self._replied:
-            await self._base_msg.reply("You have not responded within 30 seconds")
-
-    @button(label="Create Thread")
-    async def create_thread_btn(self, interaction: Interaction, btn: Button):
-        if not self._replied:
-            self._replied = True
-            btn.disabled = True
-            # thread code creation goes to here
-            await interaction.message.edit(content="Thread created!", view=self)
-            await interaction.response.send_message("Thread created")
 
 
 class DmCommunications(commands.Cog):
@@ -31,11 +9,23 @@ class DmCommunications(commands.Cog):
         self._pool = bot.pool
 
     async def handle_user_no_thread(self, message: Message):
-        await message.reply(
+        channel = message.channel
+        context = await self._bot.get_context(message)
+        result = await context.prompt(
             "Seems like you do not have an active thread. "
             + "Would you want to create one?",
-            view=StubView(message),
+            timeout=600,
+            delete_after=True,
         )
+
+        # Code to create thread here
+        if result:
+            await channel.send(
+                "Thread created; please use the following "
+                + "thread for all further communications."
+            )
+        else:
+            await channel.send("No worries!")
 
     async def handle_dm(self, message: Message):
         query = """
