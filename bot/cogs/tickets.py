@@ -161,39 +161,6 @@ class Tickets(commands.Cog):
 
         return thread
 
-    async def admin_close_ticket(
-        self, ctx: RoboContext, thread_id: int, conn: asyncpg.connection.Connection
-    ):
-        get_owner_id_query = """
-        SELECT owner_id
-        FROM tickets
-        WHERE thread_id = $1 AND location_id = $2;
-        """
-
-        delete_query = """
-        DELETE FROM tickets
-        WHERE thread_id = $1 AND owner_id = $2;
-        """
-
-        owner_id = await conn.fetchval(
-            get_owner_id_query, thread_id, TRANSPROGRAMMER_SERVER_ID
-        )
-        if owner_id is None:
-            await ctx.send("Failed to close the ticket. Is there a ticket at all?")
-            return
-        await self.close_ticket(owner_id, conn, ctx.author)
-        await conn.execute(delete_query, thread_id, owner_id)
-        cached_status = get_cached_thread.cache_invalidate(self.bot, owner_id, conn)
-        partial_status = get_partial_ticket.cache_invalidate(self.bot, owner_id, conn)
-        self.logger.info(
-            f"Cached Thread: {cached_status} - Partial Ticket: {partial_status} - Owner ID {owner_id} - Conn {conn}"
-        )
-        user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
-        ticket_description = "This ticket is now closed. Reopening and messaging in the thread will have no effect."
-        user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
-        await user.send(embed=ClosedEmbed(description=user_description))
-        await ctx.send(embed=ClosedEmbed(description=ticket_description))
-
     async def notify_finished_ticket(self, ctx: RoboContext, owner_id: int):
         # We know that an admin must have closed it
         if await self.can_admin_close_ticket(ctx):
