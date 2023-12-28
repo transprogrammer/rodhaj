@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 from rodhaj import TRANSPROGRAMMER_SERVER_ID
 
 STAFF_ROLE = 1184257456419913798
-MOD_ROLE = 1  # later this is the correct one
 TICKET_CHANNEL = 1183305410304806922  # maybe fetch it from the DB? probably not needed
 
 
@@ -258,10 +257,10 @@ class Tickets(commands.Cog):
         WHERE thread_id = $1 AND owner_id = $2;
         """
         get_owner_id_query = """
-                SELECT owner_id
-                FROM tickets
-                WHERE thread_id = $1 AND location_id = $2;
-                """
+        SELECT owner_id
+        FROM tickets
+        WHERE thread_id = $1 AND location_id = $2;
+        """
 
         async with self.pool.acquire() as conn:
             if await self.can_close_ticket(ctx, conn):
@@ -282,6 +281,13 @@ class Tickets(commands.Cog):
                 get_cached_thread.cache_invalidate(self.bot, owner_id, self.pool)
                 get_partial_ticket.cache_invalidate(self.bot, owner_id, self.pool)
                 await self.notify_finished_ticket(ctx, owner_id)
+
+    # As the guild has an entry in the cache,
+    # we need to invalidate it if a guild goes
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        dispatcher = GuildWebhookDispatcher(self.bot, guild.id)
+        dispatcher.get_config.cache_invalidate()
 
     @commands.Cog.listener()
     async def on_ticket_create(
@@ -311,7 +317,10 @@ class Tickets(commands.Cog):
         webhook = await self.obtain_webhook(guild.id)
 
         if webhook is not None:
-            embed = LoggingEmbed(title="\U0001f512 Ticket Closed")
+            embed = LoggingEmbed(
+                title="\U0001f512 Ticket Closed",
+                color=discord.Color.from_rgb(194, 163, 255),
+            )
             embed.description = f"The ticket has closed at {format_dt(utcnow())}"
             if author is not None:
                 embed.add_field(name="Closed By", value=author.mention)
