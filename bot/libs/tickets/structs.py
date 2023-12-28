@@ -20,6 +20,7 @@ class ThreadWithGuild(NamedTuple):
 
 
 class TicketThread(msgspec.Struct):
+    title: str
     user: Union[discord.User, discord.Member]
     location_id: int
     content: str

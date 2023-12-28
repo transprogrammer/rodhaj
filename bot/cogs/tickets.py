@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
@@ -193,11 +192,9 @@ class Tickets(commands.Cog):
 
         # TODO: Add file attachment support later
 
-        thread_display_id = uuid.uuid4()
-        thread_name = f"{ticket.user.display_name} | {thread_display_id}"
         content = f"({ticket.user.display_name}, {discord.utils.format_dt(ticket.created_at)})\n\n{ticket.content}"
         created_ticket = await tc.create_thread(
-            name=thread_name,
+            name=ticket.title,
             content=content,
             reason=f"Ticket submitted by {ticket.user.global_name} (ID: {ticket.user.id})",
         )

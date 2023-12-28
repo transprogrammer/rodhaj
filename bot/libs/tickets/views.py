@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+import uuid
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from libs.tickets.structs import TicketThread
-from libs.utils import ErrorEmbed, RoboView
+from libs.utils import ErrorEmbed, RoboModal, RoboView
 
 from .utils import register_user, safe_content
 
@@ -14,6 +15,31 @@ if TYPE_CHECKING:
 
     from bot.cogs.tickets import Tickets
     from bot.rodhaj import Rodhaj
+
+
+class TicketTitleModal(RoboModal, title="Ticket Title"):
+    def __init__(self, ctx: RoboContext, *args, **kwargs):
+        super().__init__(ctx=ctx, *args, **kwargs)
+
+        self.title_input = discord.ui.TextInput(
+            label="Title",
+            style=discord.TextStyle.long,
+            placeholder="Input a title...",
+            min_length=20,
+            max_length=100,
+        )
+        self.input: Optional[str] = None
+        self.add_item(self.title_input)
+
+    async def on_submit(
+        self, interaction: discord.Interaction[Rodhaj]
+    ) -> Optional[str]:
+        self.input = self.title_input.value
+        await interaction.response.send_message(
+            f"The title of the ticket is set to: `{self.title_input.value}`",
+            ephemeral=True,
+        )
+        return self.input
 
 
 class TicketConfirmView(RoboView):
@@ -26,7 +52,7 @@ class TicketConfirmView(RoboView):
         guild: discord.Guild,
         delete_after: bool = True,
     ) -> None:
-        super().__init__(ctx=ctx, timeout=10.0)
+        super().__init__(ctx=ctx, timeout=300.0)
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
@@ -35,6 +61,7 @@ class TicketConfirmView(RoboView):
         self.delete_after = delete_after
         self.triggered = asyncio.Event()
         self.pool = self.bot.pool
+        self._modal = None
 
     async def delete_response(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -42,6 +69,13 @@ class TicketConfirmView(RoboView):
             await interaction.delete_original_response()
 
         self.stop()
+
+    @discord.ui.button(label="Set Title", style=discord.ButtonStyle.blurple, row=1)
+    async def set_title(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        self._modal = TicketTitleModal(self.ctx)
+        await interaction.response.send_modal(self._modal)
 
     @discord.ui.button(
         label="Confirm",
@@ -54,7 +88,13 @@ class TicketConfirmView(RoboView):
     ) -> None:
         await register_user(self.ctx.author.id, self.pool)
         author = self.ctx.author
+
+        # TODO: Probably add user config defaults instead
+        thread_display_id = uuid.uuid4()
+        thread_name = f"{author.display_name} | {thread_display_id}"
+        title = self._modal.input if self._modal and self._modal.input else thread_name
         ticket = TicketThread(
+            title=title,
             user=author,
             location_id=self.guild.id,
             content=self.content,
