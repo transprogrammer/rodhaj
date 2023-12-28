@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 import uuid
 from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple, Optional, Union
@@ -60,6 +59,8 @@ class Tickets(commands.Cog):
         self.logger = self.bot.logger
         self.reserved_tags: dict[int, ReservedTags] = {}
 
+    ### Tag selection utils
+
     def is_tag_selected(self, user_id: int, type: str) -> Optional[bool]:
         conf = self.reserved_tags.get(user_id)
 
@@ -67,7 +68,7 @@ class Tickets(commands.Cog):
             return
         return conf[type]
 
-    #### Determining active mods
+    #### Determining staff
 
     @lru_cache(maxsize=64)
     def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
@@ -77,21 +78,6 @@ class Tickets(commands.Cog):
         if mod_role is None:
             return None
         return [member for member in mod_role.members]
-
-    def determine_active_mod(self, guild: discord.Guild) -> Optional[discord.Member]:
-        mod_role = guild.get_role(STAFF_ROLE)
-        if mod_role is None:
-            return None
-
-        active_members = [
-            member
-            for member in mod_role.members
-            if member.status == discord.Status.online
-            or member.status == discord.Status.dnd
-        ]
-        # Ideally this needs to be weighted but I'm not so sure how to implement that
-        selected_mod = random.choice(active_members)  # nosec
-        return selected_mod
 
     ### Conditions for closing tickets
 
