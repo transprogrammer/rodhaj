@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 import discord
@@ -25,13 +26,14 @@ class TicketConfirmView(RoboView):
         guild: discord.Guild,
         delete_after: bool = True,
     ) -> None:
-        super().__init__(ctx=ctx, timeout=300.0)
+        super().__init__(ctx=ctx, timeout=10.0)
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
         self.content = content
         self.guild = guild
         self.delete_after = delete_after
+        self.triggered = asyncio.Event()
         self.pool = self.bot.pool
 
     async def delete_response(self, interaction: discord.Interaction):
@@ -74,15 +76,16 @@ class TicketConfirmView(RoboView):
             created_ticket.ticket,
             safe_content(self.content),
         )
-        embed = discord.Embed(
-            title="\U0001f3ab Ticket created", color=discord.Color.from_rgb(124, 252, 0)
-        )
-        embed.description = "The ticket has been successfully created. Please continue to DM Rodhaj in order to send the message to the ticket, where an assigned staff will help you."
 
         if self.message:
-            await self.message.edit(
-                content=None, embed=embed, view=None, delete_after=5.0
+            self.triggered.set()
+
+            embed = discord.Embed(
+                title="\U0001f3ab Ticket created",
+                color=discord.Color.from_rgb(124, 252, 0),
             )
+            embed.description = "The ticket has been successfully created. Please continue to DM Rodhaj in order to send the message to the ticket, where an assigned staff will help you."
+            await self.message.edit(embed=embed, view=None, delete_after=15.0)
 
     @discord.ui.button(
         label="Cancel",
@@ -101,12 +104,18 @@ class TicketConfirmView(RoboView):
         # This is the only way you can really edit the original message
         # There is a bug here, where the message first gets edited and the timeout gets called
         # thus editing an unknown message
-        if self.message:
+        # ---
+        # In order to fix the issue with the invalid message,
+        # an event called triggered is used. This asyncio.Event
+        # is used in order to determine whether the event was triggered
+        # and if it is not, that means that it truly is an actual timeout that caused it
+        # not the user confirming and then the timeout being called later
+        if self.message and self.triggered.is_set() is False:
             embed = ErrorEmbed()
             embed.title = "\U00002757 Timed Out"
             embed.description = (
                 "Timed out waiting for a response. Not creating a ticket. "
                 "In order to create a ticket, please resend your message and properly confirm"
             )
-            await self.message.edit(embed=embed, view=None)
+            await self.message.edit(embed=embed, view=None, delete_after=15.0)
             return
