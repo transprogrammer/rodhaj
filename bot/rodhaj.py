@@ -112,10 +112,10 @@ class Rodhaj(commands.Bot):
                 return
 
             author = message.author
-            potential_ticket = await get_partial_ticket(author.id, self.pool)
+            potential_ticket = await get_partial_ticket(self, author.id, self.pool)
 
             # Represents that there is no active ticket
-            if potential_ticket.id is None:
+            if potential_ticket is None:
                 # This is for the tag selection system but Noelle is still working on that
                 tickets_cog: Tickets = self.get_cog("Tickets")  # type: ignore
                 tickets_cog.reserved_tags[author.id] = ReservedTags(
