@@ -83,7 +83,7 @@ class Rodhaj(commands.Bot):
         if message.author.bot:
             return
 
-        close_commands = ["close", "solved", "resolved"]
+        close_commands = ["close", "solved", "resolved", "is_active", "is-active"]
         if (
             message.guild is None
             and ctx.command is not None

@@ -312,6 +312,14 @@ class Tickets(commands.Cog):
                 get_partial_ticket.cache_invalidate(self.bot, owner_id, self.pool)
                 await self.notify_finished_ticket(ctx, owner_id)
 
+    @is_ticket_or_dm()
+    @commands.hybrid_command(name="is-active", aliases=["is_active"])
+    async def is_active(self, ctx: RoboContext):
+        ticket = await get_cached_thread(self.bot, ctx.author.id, self.pool)
+        is_thread_active = ticket is not None
+        format_str = "Active" if is_thread_active else "Not Active"
+        await ctx.send(f"The current ticket is: {format_str}")
+
     # As the guild has an entry in the cache,
     # we need to invalidate it if a guild goes
     @commands.Cog.listener()
