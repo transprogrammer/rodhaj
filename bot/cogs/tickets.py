@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord.utils import format_dt, utcnow
 from libs.tickets.structs import ReservedTags, StatusChecklist, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
-from libs.utils.embeds import LoggingEmbed
+from libs.utils.embeds import Embed, LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
@@ -314,11 +314,46 @@ class Tickets(commands.Cog):
 
     @is_ticket_or_dm()
     @commands.hybrid_command(name="is-active", aliases=["is_active"])
-    async def is_active(self, ctx: RoboContext):
+    async def is_active(self, ctx: RoboContext) -> None:
+        """Determines whether the current ticket is active"""
         ticket = await get_cached_thread(self.bot, ctx.author.id, self.pool)
         is_thread_active = ticket is not None
         format_str = "Active" if is_thread_active else "Not Active"
         await ctx.send(f"The current ticket is: {format_str}")
+
+    @is_ticket_or_dm()
+    @commands.hybrid_command(name="ticket-info", aliases=["tinfo"])
+    async def ticket_info(self, ctx: RoboContext) -> None:
+        """Provides information about the current ticket"""
+        ticket = await get_cached_thread(self.bot, ctx.author.id, self.pool)
+        partial_ticket = await get_partial_ticket(self.bot, ctx.author.id, self.pool)
+        if ticket is None or partial_ticket is None:
+            await ctx.send(
+                "You have no active tickets. Please send a message to Rodhaj to get started"
+            )
+            return
+
+        formatted_tags = ", ".join(
+            tag.name for tag in ticket.thread.applied_tags
+        ).rstrip(",")
+        ticket_owner = self.bot.get_user(partial_ticket.owner_id) or (
+            await self.bot.fetch_user(partial_ticket.owner_id)
+        )
+        embed = Embed()
+        embed.title = f"\U0001f3ab {ticket.thread.name}"
+        embed.description = formatted_tags
+        embed.add_field(name="Is Active", value=ticket is not None, inline=False)
+        embed.add_field(
+            name="Is Closed",
+            value=ticket.thread.archived and ticket.thread.locked,
+            inline=False,
+        )
+        embed.add_field(name="Ticket Owner", value=ticket_owner.mention, inline=False)
+        embed.add_field(
+            name="Associated Guild", value=ticket.source_guild.name, inline=False
+        )
+        embed.add_field(name="Created At", value=format_dt(ticket.thread.created_at), inline=False)  # type: ignore
+        await ctx.send(embed=embed)
 
     # As the guild has an entry in the cache,
     # we need to invalidate it if a guild goes

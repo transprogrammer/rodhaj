@@ -83,11 +83,19 @@ class Rodhaj(commands.Bot):
         if message.author.bot:
             return
 
-        close_commands = ["close", "solved", "resolved", "is_active", "is-active"]
+        whitelist_commands = [
+            "close",
+            "solved",
+            "resolved",
+            "is_active",
+            "is-active",
+            "ticket-info",
+            "tinfo",
+        ]
         if (
             message.guild is None
             and ctx.command is not None
-            and ctx.invoked_with in close_commands
+            and ctx.invoked_with in whitelist_commands
         ):
             await self.invoke(ctx)
             return
