@@ -11,7 +11,7 @@ from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import GuildWebhookDispatcher
 from discord.ext import commands
-from libs.tickets.structs import ReservedTags
+from libs.tickets.structs import ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.tickets.views import TicketConfirmView
 from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
@@ -118,9 +118,12 @@ class Rodhaj(commands.Bot):
             if potential_ticket is None:
                 # This is for the tag selection system but Noelle is still working on that
                 tickets_cog: Tickets = self.get_cog("Tickets")  # type: ignore
-                tickets_cog.reserved_tags[author.id] = ReservedTags(
-                    question=True, serious=False, private=False
+                default_tags = ReservedTags(
+                    question=False, serious=False, private=False
                 )
+                status_checklist = StatusChecklist()
+                tickets_cog.add_in_progress_tag(author.id, default_tags)
+                tickets_cog.add_status_checklist(author.id, status_checklist)
                 guild = self.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
                     await self.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
                 )
@@ -132,7 +135,9 @@ class Rodhaj(commands.Bot):
                 embed.description = (
                     "Are you ready to create a ticket? "
                     "Before you click the `Confirm` button, please select the tags found in the dropdown menu. "
-                    "Doing this step is crucial as these tags are used in order to help better sort tickets for the staff team."
+                    "Doing this step is crucial as these tags are used in order to help better sort tickets for the staff team. "
+                    "In addition, please set the title of your ticket using the `Set Title` button. "
+                    "This will also help identify your ticket and streamline the process."
                     "\n\nNote: Once you have created your ticket, this prompt will not show up again"
                 )
 

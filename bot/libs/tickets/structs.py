@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 from typing import NamedTuple, Optional, TypedDict, Union
 
 import asyncpg
 import discord
 import msgspec
+
+
+class StatusChecklist(msgspec.Struct):
+    title: asyncio.Event = asyncio.Event()
+    tags: asyncio.Event = asyncio.Event()
 
 
 class ReservedTags(TypedDict):
@@ -24,6 +30,7 @@ class TicketThread(msgspec.Struct):
     user: Union[discord.User, discord.Member]
     location_id: int
     content: str
+    tags: list[str]
     created_at: datetime.datetime
 
 

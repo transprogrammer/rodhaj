@@ -7,7 +7,7 @@ import asyncpg
 import discord
 from discord.ext import commands
 from discord.utils import format_dt, utcnow
-from libs.tickets.structs import ReservedTags, TicketThread
+from libs.tickets.structs import ReservedTags, StatusChecklist, TicketThread
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.utils.embeds import LoggingEmbed
 
@@ -56,6 +56,7 @@ class Tickets(commands.Cog):
         self.pool = self.bot.pool
         self.logger = self.bot.logger
         self.reserved_tags: dict[int, ReservedTags] = {}
+        self.in_progress_tickets: dict[int, StatusChecklist] = {}
 
     ### Tag selection utils
 
@@ -65,6 +66,15 @@ class Tickets(commands.Cog):
         if conf is None:
             return
         return conf[type]
+
+    def add_in_progress_tag(self, author_id: int, tags: ReservedTags) -> ReservedTags:
+        reserved = self.reserved_tags.setdefault(author_id, tags)
+        return reserved
+
+    def add_status_checklist(
+        self, author_id: int, status: StatusChecklist
+    ) -> StatusChecklist:
+        return self.in_progress_tickets.setdefault(author_id, status)
 
     #### Determining staff
 
@@ -191,8 +201,15 @@ class Tickets(commands.Cog):
 
         # TODO: Add file attachment support later
 
+        all_tags = tc.available_tags
+        applied_tags = [
+            discord.utils.get(all_tags, name=tag.title()) for tag in ticket.tags
+        ]
+        processed_tags = [tag for tag in applied_tags if tag is not None]
+
         content = f"({ticket.user.display_name}, {discord.utils.format_dt(ticket.created_at)})\n\n{ticket.content}"
         created_ticket = await tc.create_thread(
+            applied_tags=processed_tags,
             name=ticket.title,
             content=content,
             reason=f"Ticket submitted by {ticket.user.global_name} (ID: {ticket.user.id})",
