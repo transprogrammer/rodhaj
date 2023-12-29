@@ -123,8 +123,15 @@ class Tickets(commands.Cog):
     async def lock_ticket(
         self, thread: discord.Thread, reason: Optional[str] = None
     ) -> discord.Thread:
-        # TODO: Add the solved tag in here
-        locked_thread = await thread.edit(archived=True, locked=True, reason=reason)
+        tags = thread.applied_tags
+        solved_tag = self.get_solved_tag(thread.parent)
+
+        if solved_tag is not None and not any(tag.id == solved_tag.id for tag in tags):
+            tags.append(solved_tag)
+
+        locked_thread = await thread.edit(
+            applied_tags=tags, archived=True, locked=True, reason=reason
+        )
         return locked_thread
 
     async def close_ticket(
@@ -257,6 +264,19 @@ class Tickets(commands.Cog):
 
     async def tick_post(self, ctx: RoboContext) -> None:
         await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
+
+    def get_solved_tag(
+        self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
+    ):
+        if not isinstance(channel, discord.ForumChannel):
+            return None
+
+        all_tags = channel.available_tags
+
+        solved_tag = discord.utils.get(all_tags, name="Resolved")
+        if solved_tag is None:
+            return None
+        return solved_tag
 
     @is_ticket_or_dm()
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
