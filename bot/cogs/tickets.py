@@ -60,13 +60,6 @@ class Tickets(commands.Cog):
 
     ### Tag selection utils
 
-    def is_tag_selected(self, user_id: int, type: str) -> Optional[bool]:
-        conf = self.reserved_tags.get(user_id)
-
-        if conf is None:
-            return
-        return conf[type]
-
     def add_in_progress_tag(self, author_id: int, tags: ReservedTags) -> ReservedTags:
         reserved = self.reserved_tags.setdefault(author_id, tags)
         return reserved
