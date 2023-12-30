@@ -6,6 +6,7 @@ import discord
 from aiohttp import ClientSession
 from environs import Env
 from libs.utils import RodhajLogger
+
 from rodhaj import Rodhaj
 
 if os.name == "nt":
@@ -23,7 +24,6 @@ POSTGRES_URI = env("POSTGRES_URI")
 
 intents = discord.Intents.default()
 intents.message_content = True
-intents.presences = True
 intents.members = True
 
 
