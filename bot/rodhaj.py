@@ -25,7 +25,7 @@ try:
 except ImportError:
     _fsw = False
 
-TRANSPROGRAMMER_SERVER_ID = 1183302385020436480
+TRANSPROGRAMMER_GUILD_ID = 1183302385020436480
 
 
 class Rodhaj(commands.Bot):
@@ -55,6 +55,7 @@ class Rodhaj(commands.Bot):
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
+        self.transprogrammer_guild_id = TRANSPROGRAMMER_GUILD_ID
         self.version = str(VERSION)
         self._dev_mode = dev_mode
 
@@ -73,7 +74,7 @@ class Rodhaj(commands.Bot):
         FROM guild_config
         WHERE id = $1;
         """
-        rows = await self.pool.fetchrow(query, TRANSPROGRAMMER_SERVER_ID)
+        rows = await self.pool.fetchrow(query, self.transprogrammer_guild_id)
         if rows is None:
             return None
         return PartialConfig(rows)
@@ -143,8 +144,8 @@ class Rodhaj(commands.Bot):
                 status_checklist = StatusChecklist()
                 tickets_cog.add_in_progress_tag(author.id, default_tags)
                 tickets_cog.add_status_checklist(author.id, status_checklist)
-                guild = self.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
-                    await self.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
+                guild = self.get_guild(self.transprogrammer_guild_id) or (
+                    await self.fetch_guild(self.transprogrammer_guild_id)
                 )
 
                 embed = discord.Embed(

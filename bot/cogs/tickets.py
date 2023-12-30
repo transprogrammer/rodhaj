@@ -15,9 +15,9 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
+
     from rodhaj import Rodhaj
 
-from rodhaj import TRANSPROGRAMMER_SERVER_ID
 
 STAFF_ROLE = 1184257456419913798
 
@@ -97,9 +97,8 @@ class Tickets(commands.Cog):
         return False
 
     async def can_admin_close_ticket(self, ctx: RoboContext) -> bool:
-        guild = self.bot.get_guild(TRANSPROGRAMMER_SERVER_ID) or (
-            await self.bot.fetch_guild(TRANSPROGRAMMER_SERVER_ID)
-        )
+        guild_id = self.bot.transprogrammer_guild_id
+        guild = self.bot.get_guild(guild_id) or (await self.bot.fetch_guild(guild_id))
         staff_members = self.get_staff(guild)
 
         if staff_members is None:
@@ -296,7 +295,9 @@ class Tickets(commands.Cog):
                 owner_id = ctx.author.id
                 if await self.can_admin_close_ticket(ctx):
                     owner_id = await conn.fetchval(
-                        get_owner_id_query, ctx.channel.id, TRANSPROGRAMMER_SERVER_ID
+                        get_owner_id_query,
+                        ctx.channel.id,
+                        self.bot.transprogrammer_guild_id,
                     )
 
                 await self.tick_post(ctx)
