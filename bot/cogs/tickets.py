@@ -73,24 +73,21 @@ class Tickets(commands.Cog):
 
     @lru_cache(maxsize=64)
     def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
-        mod_role = guild.get_role(
-            STAFF_ROLE
-        )  # TODO: change the STAFF_ROLE_ID to the correct one
+        mod_role = guild.get_role(STAFF_ROLE)
         if mod_role is None:
             return None
         return [member for member in mod_role.members]
 
     ### Conditions for closing tickets
 
-    async def can_close_ticket(
-        self, ctx: RoboContext, connection: Union[asyncpg.Pool, asyncpg.Connection]
-    ):
-        connection = connection or self.pool
-        partial_ticket = await get_partial_ticket(self.bot, ctx.author.id, connection)
+    async def can_close_ticket(self, ctx: RoboContext):
+        partial_ticket = await get_partial_ticket(self.bot, ctx.author.id)
+
+        if partial_ticket.id is None:
+            return False
 
         if (
             ctx.guild is None
-            and partial_ticket is not None
             and partial_ticket.owner_id == ctx.author.id
             or await self.can_admin_close_ticket(ctx)
         ):
@@ -293,7 +290,7 @@ class Tickets(commands.Cog):
         """
 
         async with self.pool.acquire() as conn:
-            if await self.can_close_ticket(ctx, conn):
+            if await self.can_close_ticket(ctx):
                 owner_id = ctx.author.id
                 if await self.can_admin_close_ticket(ctx):
                     owner_id = await conn.fetchval(
@@ -327,7 +324,7 @@ class Tickets(commands.Cog):
         """Provides information about the current ticket"""
         ticket = await get_cached_thread(self.bot, ctx.author.id, self.pool)
         partial_ticket = await get_partial_ticket(self.bot, ctx.author.id, self.pool)
-        if ticket is None or partial_ticket is None:
+        if ticket is None or partial_ticket.id is None:
             await ctx.send(
                 "You have no active tickets. Please send a message to Rodhaj to get started"
             )

@@ -45,3 +45,9 @@ class PartialTicket:
             self.thread_id = record["thread_id"]
             self.owner_id = record["owner_id"]
             self.location_id = record["location_id"]
+
+    # For debugging purposes
+    def __repr__(self):
+        if self.id is None:
+            return f"<PartialTicket id={self.id}>"
+        return f"<PartialTicket id={self.id} thread_id={self.thread_id} owner_id={self.owner_id} location_id={self.location_id}>"

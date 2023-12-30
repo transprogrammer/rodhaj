@@ -35,10 +35,10 @@ async def register_user(
     return True
 
 
-@alru_cache
+@alru_cache(maxsize=256)
 async def get_partial_ticket(
-    bot: Rodhaj, user_id: int, connection: Optional[asyncpg.Pool] = None
-) -> Optional[PartialTicket]:
+    bot: Rodhaj, user_id: int, pool: Optional[asyncpg.Pool] = None
+) -> PartialTicket:
     """Provides an `PartialTicket` object in order to perform various actions
 
     The `PartialTicket` represents a partial record of an ticket found in the
@@ -49,8 +49,9 @@ async def get_partial_ticket(
     of it is filled.
 
     Args:
+        bot (Rodhaj): An instance of `Rodhaj`
         user_id (int): ID of the user
-        pool (asyncpg.Pool): Pool of connections from asyncpg
+        pool (asyncpg.Pool): Pool of connections from asyncpg. Defaults to `None`
 
     Returns:
         PartialTicket: An representation of a "partial" ticket
@@ -60,15 +61,19 @@ async def get_partial_ticket(
     FROM tickets
     WHERE owner_id = $1;
     """
-    connection = connection or bot.pool
-    rows = await connection.fetchrow(query, user_id)
+    pool = pool or bot.pool
+    rows = await pool.fetchrow(query, user_id)
     if rows is None:
-        # This represents no active ticket
-        return None
+        # In order to prevent caching invalid tickets, we need to invalidate the cache.
+        # By invalidating the cache, we basically "ignore" the invalid
+        # ticket. This essentially still leaves us with the performance boosts
+        # of the LRU cache, while also properly invalidating invalid tickets
+        get_partial_ticket.cache_invalidate(bot, user_id, pool)
+        return PartialTicket()
     return PartialTicket(rows)
 
 
-@alru_cache
+@alru_cache(maxsize=64)
 async def get_cached_thread(
     bot: Rodhaj, user_id: int, connection: Optional[asyncpg.Pool] = None
 ) -> Optional[ThreadWithGuild]:
@@ -80,6 +85,7 @@ async def get_cached_thread(
     Args:
         bot (Rodhaj): Instance of `RodHaj`
         user_id (int): ID of the user
+        connection (Optional[asyncpg.Pool]): Pool of connections from asyncpg. Defaults to `None`
 
     Returns:
         Optional[ThreadWithGuild]: The thread with the guild the thread belongs to.
@@ -101,6 +107,7 @@ async def get_cached_thread(
     if isinstance(forum_channel, discord.ForumChannel):
         thread = forum_channel.get_thread(record["thread_id"])
         if thread is None:
+            get_cached_thread.cache_invalidate(bot, user_id, connection)
             return None
         return ThreadWithGuild(thread, thread.guild)
 
