@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 import datetime
 import itertools
 import platform
-from typing import TYPE_CHECKING
 
 import discord
 import psutil
@@ -12,8 +9,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta
 
-if TYPE_CHECKING:
-    from bot.rodhaj import Rodhaj
+from rodhaj import Rodhaj
 
 
 # A cog houses a category of commands
