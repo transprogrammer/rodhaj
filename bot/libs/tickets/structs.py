@@ -51,3 +51,15 @@ class PartialTicket:
         if self.id is None:
             return f"<PartialTicket id={self.id}>"
         return f"<PartialTicket id={self.id} thread_id={self.thread_id} owner_id={self.owner_id} location_id={self.location_id}>"
+
+
+class PartialConfig:
+    __slots__ = ("id", "ticket_channel_id", "logging_channel_id")
+
+    def __init__(self, record: Optional[asyncpg.Record] = None):
+        self.id = None
+
+        if record:
+            self.id = record["id"]
+            self.ticket_channel_id = record["ticket_channel_id"]
+            self.logging_channel_id = record["logging_channel_id"]

@@ -20,14 +20,15 @@ if TYPE_CHECKING:
 from rodhaj import TRANSPROGRAMMER_SERVER_ID
 
 STAFF_ROLE = 1184257456419913798
-TICKET_CHANNEL = 1183305410304806922  # maybe fetch it from the DB? probably not needed
 
 
 def is_ticket_or_dm():
     def pred(ctx: RoboContext) -> bool:
+        partial_config = ctx.partial_config
         return (
             isinstance(ctx.channel, discord.Thread)
-            and ctx.channel.parent_id == TICKET_CHANNEL
+            and partial_config is not None
+            and ctx.channel.parent_id == partial_config.ticket_channel_id
         ) or ctx.guild is None
 
     return commands.check(pred)
@@ -108,7 +109,8 @@ class Tickets(commands.Cog):
         staff_ids = [member.id for member in staff_members]
         from_ticket_channel = (
             isinstance(ctx.channel, discord.Thread)
-            and ctx.channel.parent_id == TICKET_CHANNEL
+            and ctx.partial_config is not None
+            and ctx.channel.parent_id == ctx.partial_config.ticket_channel_id
         )
 
         if ctx.author.id in staff_ids and from_ticket_channel is True:

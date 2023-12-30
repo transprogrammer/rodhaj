@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import signal
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import asyncpg
 import discord
@@ -11,7 +11,7 @@ from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import GuildWebhookDispatcher
 from discord.ext import commands
-from libs.tickets.structs import ReservedTags, StatusChecklist
+from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.tickets.views import TicketConfirmView
 from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
@@ -53,6 +53,7 @@ class Rodhaj(commands.Bot):
         )
         self.logger = logging.getLogger("rodhaj")
         self.session = session
+        self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
         self.version = str(VERSION)
         self._dev_mode = dev_mode
@@ -65,6 +66,17 @@ class Rodhaj(commands.Bot):
                 reload_file = Path(changes_list[1])
                 self.logger.info(f"Reloading extension: {reload_file.name[:-3]}")
                 await self.reload_extension(f"cogs.{reload_file.name[:-3]}")
+
+    async def fetch_partial_config(self) -> Optional[PartialConfig]:
+        query = """
+        SELECT id, ticket_channel_id, logging_channel_id
+        FROM guild_config
+        WHERE id = $1;
+        """
+        rows = await self.pool.fetchrow(query, TRANSPROGRAMMER_SERVER_ID)
+        if rows is None:
+            return None
+        return PartialConfig(rows)
 
     async def get_context(
         self, origin: Union[discord.Interaction, discord.Message], /, *, cls=RoboContext
@@ -182,6 +194,8 @@ class Rodhaj(commands.Bot):
         # Load Jishaku during production as this is what Umbra, Jeyy and others do
         # Useful for debugging purposes
         await self.load_extension("jishaku")
+
+        self.partial_config = await self.fetch_partial_config()
 
         if self._dev_mode is True and _fsw is True:
             self.logger.info("Dev mode is enabled. Loading FSWatcher")
