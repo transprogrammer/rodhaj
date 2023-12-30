@@ -1,11 +1,15 @@
-from typing import Literal, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from cogs import EXTENSIONS
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 from libs.utils import RoboContext, RoboView
-from rodhaj import Rodhaj
+
+if TYPE_CHECKING:
+    from bot.rodhaj import Rodhaj
 
 
 class MaybeView(RoboView):
