@@ -5,7 +5,6 @@ import discord
 from aiohttp import ClientSession
 from environs import Env
 from libs.utils import RodhajLogger
-
 from rodhaj import Rodhaj
 
 if os.name == "nt":
