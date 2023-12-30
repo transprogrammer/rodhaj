@@ -1,4 +1,3 @@
-import asyncio
 import os
 
 import asyncpg
@@ -6,12 +5,13 @@ import discord
 from aiohttp import ClientSession
 from environs import Env
 from libs.utils import RodhajLogger
+
 from rodhaj import Rodhaj
 
 if os.name == "nt":
-    from winloop import install
+    from winloop import run
 else:
-    from uvloop import install
+    from uvloop import run
 
 # Hope not to trip pyright
 env = Env()
@@ -38,8 +38,7 @@ async def main() -> None:
 
 def launch() -> None:
     with RodhajLogger():
-        install()
-        asyncio.run(main())
+        run(main())
 
 
 if __name__ == "__main__":
