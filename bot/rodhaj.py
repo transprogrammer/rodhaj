@@ -1,5 +1,4 @@
 import logging
-import signal
 from pathlib import Path
 from typing import Union
 
@@ -66,12 +65,6 @@ class Rodhaj(commands.Bot):
         await send_error_embed(ctx, error)
 
     async def setup_hook(self) -> None:
-        def stop():
-            self.loop.create_task(self.close())
-
-        self.loop.add_signal_handler(signal.SIGTERM, stop)
-        self.loop.add_signal_handler(signal.SIGINT, stop)
-
         for extension in EXTENSIONS:
             await self.load_extension(extension)
 

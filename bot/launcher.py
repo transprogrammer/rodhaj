@@ -1,10 +1,11 @@
 import os
+import signal
 
 import asyncpg
 import discord
 from aiohttp import ClientSession
 from environs import Env
-from libs.utils import RodhajLogger
+from libs.utils import KeyboardInterruptHandler, RodhajLogger
 
 from rodhaj import Rodhaj
 
@@ -32,6 +33,8 @@ async def main() -> None:
         async with Rodhaj(
             intents=intents, session=session, pool=pool, dev_mode=DEV_MODE
         ) as bot:
+            bot.loop.add_signal_handler(signal.SIGTERM, KeyboardInterruptHandler(bot))
+            bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
             await bot.start(TOKEN)
 
 
@@ -41,7 +44,4 @@ def launch() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        launch()
-    except KeyboardInterrupt:
-        pass
+    launch()
