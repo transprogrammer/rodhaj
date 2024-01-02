@@ -15,6 +15,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -43,7 +44,7 @@ class TicketOutput(NamedTuple):
 class ClosedEmbed(discord.Embed):
     def __init__(self, **kwargs):
         kwargs.setdefault("color", discord.Color.from_rgb(138, 255, 157))
-        kwargs.setdefault("title", "SUCCESS_TICK_EMOJI Ticket Closed")
+        kwargs.setdefault("title", "\U00002705 Ticket Closed")
         kwargs.setdefault("timestamp", discord.utils.utcnow())
         super().__init__(**kwargs)
         self.set_footer(text="Ticket closed at")
@@ -197,8 +198,6 @@ class Tickets(commands.Cog):
         if not isinstance(tc, discord.ForumChannel):
             return
 
-        # TODO: Add file attachment support later
-
         all_tags = tc.available_tags
         applied_tags = [
             discord.utils.get(all_tags, name=tag.title()) for tag in ticket.tags
@@ -210,6 +209,7 @@ class Tickets(commands.Cog):
             applied_tags=processed_tags,
             name=ticket.title,
             content=content,
+            files=ticket.files,
             reason=f"Ticket submitted by {ticket.user.global_name} (ID: {ticket.user.id})",
         )
 
@@ -261,7 +261,7 @@ class Tickets(commands.Cog):
         return await dispatcher.get_webhook()
 
     async def tick_post(self, ctx: RoboContext) -> None:
-        await ctx.message.add_reaction(discord.PartialEmoji(name="SUCCESS_TICK_EMOJI"))
+        await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
 
     def get_solved_tag(
         self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]

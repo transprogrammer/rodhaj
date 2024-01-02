@@ -137,6 +137,15 @@ class Rodhaj(commands.Bot):
 
             # Represents that there is no active ticket
             if potential_ticket.id is None:
+                # We might want to validate the content type here...
+                if len(message.attachments) > 10:
+                    over_msg = (
+                        "There are more than 10 attachments linked. "
+                        "Please remove some and try again"
+                    )
+                    await author.send(over_msg)
+                    return
+
                 tickets_cog: Tickets = self.get_cog("Tickets")  # type: ignore
                 default_tags = ReservedTags(
                     question=False, serious=False, private=False
@@ -161,7 +170,9 @@ class Rodhaj(commands.Bot):
                     "\n\nNote: Once you have created your ticket, this prompt will not show up again"
                 )
 
-                view = TicketConfirmView(self, ctx, tickets_cog, message.content, guild)
+                view = TicketConfirmView(
+                    message.attachments, self, ctx, tickets_cog, message.content, guild
+                )
                 view.message = await author.send(embed=embed, view=view)
                 return
 

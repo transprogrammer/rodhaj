@@ -129,6 +129,7 @@ class TicketTagsSelect(discord.ui.Select):
 class TicketConfirmView(RoboView):
     def __init__(
         self,
+        attachments: list[discord.Attachment],
         bot: Rodhaj,
         ctx: RoboContext,
         cog: Tickets,
@@ -137,6 +138,7 @@ class TicketConfirmView(RoboView):
         delete_after: bool = True,
     ) -> None:
         super().__init__(ctx=ctx, timeout=300.0)
+        self.attachments = attachments
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
@@ -248,12 +250,14 @@ class TicketConfirmView(RoboView):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        files = [await attachment.to_file() for attachment in self.attachments]
         ticket = TicketThread(
             title=title,
             user=author,
             location_id=self.guild.id,
             content=self.content,
             tags=applied_tags,
+            files=files,
             created_at=discord.utils.utcnow(),
         )
         created_ticket = await self.cog.create_ticket(ticket)

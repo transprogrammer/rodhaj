@@ -31,6 +31,7 @@ class TicketThread(msgspec.Struct):
     location_id: int
     content: str
     tags: list[str]
+    files: list[discord.File]
     created_at: datetime.datetime
 
 
