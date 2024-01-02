@@ -341,7 +341,7 @@ class Tickets(commands.Cog):
             await self.bot.fetch_user(partial_ticket.owner_id)
         )
         embed = Embed()
-        embed.title = f"TICKET_EMOJI {ticket.thread.name}"
+        embed.title = f"{TICKET_EMOJI} {ticket.thread.name}"
         embed.description = formatted_tags
         embed.add_field(name="Is Active", value=ticket is not None, inline=False)
         embed.add_field(
@@ -374,7 +374,7 @@ class Tickets(commands.Cog):
         webhook = await self.obtain_webhook(guild.id)
 
         if webhook is not None:
-            embed = LoggingEmbed(title="TICKET_EMOJI New Ticket")
+            embed = LoggingEmbed(title=f"{TICKET_EMOJI} New Ticket")
             embed.description = init_message
             embed.add_field(name="Owner", value=user.mention)
             embed.add_field(name="Link", value=ticket.thread.mention)
