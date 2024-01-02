@@ -8,6 +8,7 @@ import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta
+
 from rodhaj import Rodhaj
 
 
@@ -47,13 +48,25 @@ class Utilities(commands.Cog):
         )
         return "\n".join(self.format_commit(c) for c in commits)
 
+    async def fetch_num_active_tickets(self) -> int:
+        query = "SELECT COUNT(*) FROM tickets;"
+        value = await self.bot.pool.fetchval(query)
+        if value is None:
+            return 0
+        return value
+
     @commands.hybrid_command(name="about")
     async def about(self, ctx: RoboContext) -> None:
         """Shows some stats for Rodhaj"""
         total_members = 0
         total_unique = len(self.bot.users)
 
+        guilds = 0
         for guild in self.bot.guilds:
+            guilds += 1
+            if guild.unavailable:
+                continue
+
             total_members += guild.member_count or 0
 
         # For Kumiko, it's done differently
@@ -62,20 +75,33 @@ class Utilities(commands.Cog):
         cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
 
         revisions = self.get_last_commits()
+        footer_text = (
+            "Developed by Noelle and the Transprogrammer dev team\n"
+            f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}"
+        )
         embed = Embed()
         embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)  # type: ignore
-        embed.title = "About Me"
-        embed.description = f"Latest Changes:\n {revisions}"
+        embed.title = "Rodhaj"
+        embed.description = (
+            "Rodhaj is a modern, improved ModMail bot designed exclusively for "
+            "the transprogrammer community. By creating a shared inbox, "
+            "it allows for users and staff to seamlessly communicate safely, securely, and privately. "
+            "In order to start using Rodhaj, please DM Rodhaj to make a ticket. "
+            f"\n\nLatest Changes:\n {revisions}"
+        )
         embed.set_footer(
-            text=f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}",
+            text=footer_text,
             icon_url="https://cdn.discordapp.com/emojis/596577034537402378.png",
         )
-        embed.add_field(name="Servers Count", value=len(self.bot.guilds))
+        embed.add_field(name="Servers", value=len(self.bot.guilds))
         embed.add_field(
-            name="User Count", value=f"{total_members} total\n{total_unique} unique"
+            name="User", value=f"{total_members} total\n{total_unique} unique"
         )
         embed.add_field(
             name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
+        )
+        embed.add_field(
+            name="Active Tickets", value=await self.fetch_num_active_tickets()
         )
         embed.add_field(name="Version", value=str(self.bot.version))
         embed.add_field(name="Uptime", value=self.get_bot_uptime(brief=True))
