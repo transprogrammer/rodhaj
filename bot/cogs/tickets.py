@@ -218,14 +218,14 @@ class Tickets(commands.Cog):
             try:
                 await conn.execute(
                     ticket_query,
-                    created_ticket[0].id,
+                    created_ticket.thread.id,
                     ticket.user.id,
                     ticket.location_id,
                 )
             except asyncpg.UniqueViolationError:
                 await tr.rollback()
                 await self.lock_ticket(
-                    created_ticket[0],
+                    created_ticket.thread,
                     reason=f"Attempted to create duplicate ticket (User ID: {ticket.user.id})",
                 )
                 return TicketOutput(
@@ -236,7 +236,7 @@ class Tickets(commands.Cog):
             except Exception:
                 await tr.rollback()
                 await self.lock_ticket(
-                    created_ticket[0],
+                    created_ticket.thread,
                     reason=f"Failed to create ticket (User ID: {ticket.user.id})",
                 )
                 return TicketOutput(
@@ -244,8 +244,6 @@ class Tickets(commands.Cog):
                 )
             else:
                 await tr.commit()
-                get_partial_ticket.cache_invalidate()
-                get_cached_thread.cache_invalidate()
                 return TicketOutput(
                     status=True,
                     ticket=created_ticket,
