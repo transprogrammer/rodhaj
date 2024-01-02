@@ -3,27 +3,21 @@ from typing import Literal, Optional
 import discord
 from cogs import EXTENSIONS
 from discord.ext import commands
-from discord.ext.commands import Context, Greedy
-from libs.utils import RoboContext, RoboView
+from discord.ext.commands import Greedy
+from libs.utils import RoboContext
+
 from rodhaj import Rodhaj
 
 
-class MaybeView(RoboView):
-    def __init__(self, ctx: RoboContext) -> None:
-        super().__init__(ctx)
+class Admin(commands.Cog, command_attrs=dict(hidden=True)):
+    """Administrative commands for Rodhaj"""
 
-    @discord.ui.button(label="eg")
-    async def eg(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ) -> None:
-        await interaction.response.send_message("yo nice oen", ephemeral=True)
-
-
-class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
-    """Tools for developing RodHaj"""
-
-    def __init__(self, bot: Rodhaj):
+    def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
+
+    @property
+    def display_emoji(self) -> discord.PartialEmoji:
+        return discord.PartialEmoji(name="\U00002699")
 
     async def cog_check(self, ctx: RoboContext) -> bool:
         return await self.bot.is_owner(ctx.author)
@@ -35,17 +29,11 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
     @commands.command(name="sync")
     async def sync(
         self,
-        ctx: Context,
+        ctx: RoboContext,
         guilds: Greedy[discord.Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> None:
-        """Performs a sync of the tree. This will sync, copy globally, or clear the tree.
-
-        Args:
-            ctx (Context): Context of the command
-            guilds (Greedy[discord.Object]): Which guilds to sync to. Greedily accepts a number of guilds
-            spec (Optional[Literal["~", "*", "^"], optional): Specs to sync.
-        """
+        """Performs a sync of the tree. This will sync, copy globally, or clear the tree."""
         await ctx.defer()
         if not guilds:
             if spec == "~":
@@ -76,7 +64,6 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
 
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
-    @commands.guild_only()
     @commands.command(name="reload-all")
     async def reload_all(self, ctx: RoboContext) -> None:
         """Reloads all cogs. Used in production to not produce any downtime"""
@@ -88,11 +75,6 @@ class DevTools(commands.Cog, command_attrs=dict(hidden=True)):
             await self.bot.reload_extension(extension)
         await ctx.send("Successfully reloaded all extensions live")
 
-    @commands.command(name="view-test", hidden=True)
-    async def view_test(self, ctx: RoboContext) -> None:
-        view = MaybeView(ctx)
-        view.message = await ctx.send("yeo", view=view)
 
-
-async def setup(bot: Rodhaj):
-    await bot.add_cog(DevTools(bot))
+async def setup(bot: Rodhaj) -> None:
+    await bot.add_cog(Admin(bot))
