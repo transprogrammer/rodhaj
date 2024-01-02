@@ -15,6 +15,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -157,10 +158,8 @@ class Tickets(commands.Cog):
         # We know that an admin must have closed it
         if await self.can_admin_close_ticket(ctx):
             user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
-            ticket_description = "This ticket is now closed. Reopening and messaging in the thread will have no effect."
             user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
             await user.send(embed=ClosedEmbed(description=user_description))
-            await ctx.send(embed=ClosedEmbed(description=ticket_description))
             return
         closed_embed = ClosedEmbed(description="You have closed the ticket")
         closed_embed.set_footer(
