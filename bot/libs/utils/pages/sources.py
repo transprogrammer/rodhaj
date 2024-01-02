@@ -6,7 +6,7 @@ import discord
 from discord.ext import menus
 
 from ..embeds import Embed
-from .paginator import HajPages
+from .paginator import RoboPages
 
 
 # I (Noelle) will more than likely work on an cleaner way for this
@@ -14,7 +14,7 @@ class EmbedListSource(menus.ListPageSource):
     """Source for taking contents of an Embed, and formatting them into a page"""
 
     async def format_page(
-        self, menu: HajPages, entries: dict[str, Any]
+        self, menu: RoboPages, entries: dict[str, Any]
     ) -> discord.Embed:
         """Formatter for the embed list source
 
