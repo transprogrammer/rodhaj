@@ -193,17 +193,24 @@ class Config(commands.Cog):
         forum_description = "\n".join(forum_description_content)
         forum_tags = [
             discord.ForumTag(
-                name="Question", emoji=discord.PartialEmoji(name="\U00002753")
+                name="Question",
+                emoji=discord.PartialEmoji(
+                    name="\U00002753"
+                ),  # U+2753 Black Question Mark Ornament
             ),
             discord.ForumTag(
-                name="Serious", emoji=discord.PartialEmoji(name="\U0001f610")
+                name="Serious",
+                emoji=discord.PartialEmoji(name="\U0001f610"),  # U+1F610 Neutral Face
             ),
             discord.ForumTag(
-                name="Private", emoji=discord.PartialEmoji(name="\U0001f512")
+                name="Private",
+                emoji=discord.PartialEmoji(name="\U0001f512"),  # U+1F512 Lock
             ),
             discord.ForumTag(
                 name="Resolved",
-                emoji=discord.PartialEmoji(name="\U00002705"),
+                emoji=discord.PartialEmoji(
+                    name="\U00002705"
+                ),  # U+2705 White Heavy Check Mark
                 moderated=True,
             ),
         ]

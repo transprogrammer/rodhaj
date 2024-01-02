@@ -15,10 +15,12 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
+
     from rodhaj import Rodhaj
 
 
 STAFF_ROLE = 1184257456419913798
+TICKET_EMOJI = "\U0001f3ab"  # U+1F3AB Ticket
 
 
 def is_ticket_or_dm():
@@ -42,7 +44,7 @@ class TicketOutput(NamedTuple):
 class ClosedEmbed(discord.Embed):
     def __init__(self, **kwargs):
         kwargs.setdefault("color", discord.Color.from_rgb(138, 255, 157))
-        kwargs.setdefault("title", "\U00002705 Ticket Closed")
+        kwargs.setdefault("title", "SUCCESS_TICK_EMOJI Ticket Closed")
         kwargs.setdefault("timestamp", discord.utils.utcnow())
         super().__init__(**kwargs)
         self.set_footer(text="Ticket closed at")
@@ -260,7 +262,7 @@ class Tickets(commands.Cog):
         return await dispatcher.get_webhook()
 
     async def tick_post(self, ctx: RoboContext) -> None:
-        await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
+        await ctx.message.add_reaction(discord.PartialEmoji(name="SUCCESS_TICK_EMOJI"))
 
     def get_solved_tag(
         self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
@@ -339,7 +341,7 @@ class Tickets(commands.Cog):
             await self.bot.fetch_user(partial_ticket.owner_id)
         )
         embed = Embed()
-        embed.title = f"\U0001f3ab {ticket.thread.name}"
+        embed.title = f"TICKET_EMOJI {ticket.thread.name}"
         embed.description = formatted_tags
         embed.add_field(name="Is Active", value=ticket is not None, inline=False)
         embed.add_field(
@@ -372,7 +374,7 @@ class Tickets(commands.Cog):
         webhook = await self.obtain_webhook(guild.id)
 
         if webhook is not None:
-            embed = LoggingEmbed(title="\U0001f3ab New Ticket")
+            embed = LoggingEmbed(title="TICKET_EMOJI New Ticket")
             embed.description = init_message
             embed.add_field(name="Owner", value=user.mention)
             embed.add_field(name="Link", value=ticket.thread.mention)

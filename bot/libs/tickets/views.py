@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from bot.rodhaj import Rodhaj
 
 
+# Note that these emoji codepoints appear a lot:
+# \U00002705 - U+2705 White Heavy Check Mark
+# \U0000274c - U+274c Cross Mark
 class TicketTitleModal(RoboModal, title="Ticket Title"):
     def __init__(self, ctx: RoboContext, ticket_cog: Tickets, *args, **kwargs):
         super().__init__(ctx=ctx, *args, **kwargs)
