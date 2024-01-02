@@ -15,7 +15,6 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import RoboContext
-
     from rodhaj import Rodhaj
 
 
