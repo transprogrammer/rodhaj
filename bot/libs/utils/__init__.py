@@ -7,6 +7,7 @@ from .context import RoboContext as RoboContext
 from .embeds import Embed as Embed, ErrorEmbed as ErrorEmbed
 from .errors import send_error_embed as send_error_embed
 from .handler import KeyboardInterruptHandler as KeyboardInterruptHandler
+from .help import RodhajHelp as RodhajHelp
 from .logger import RodhajLogger as RodhajLogger
 from .modals import RoboModal as RoboModal
 from .time import human_timedelta as human_timedelta

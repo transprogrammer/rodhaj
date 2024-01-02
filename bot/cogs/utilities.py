@@ -20,6 +20,10 @@ class Utilities(commands.Cog):
         self.bot = bot
         self.process = psutil.Process()
 
+    @property
+    def display_emoji(self) -> discord.PartialEmoji:
+        return discord.PartialEmoji(name="\U0001f9f0")
+
     def get_bot_uptime(self, *, brief: bool = False) -> str:
         return human_timedelta(
             self.bot.uptime, accuracy=None, brief=brief, suffix=False

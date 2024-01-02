@@ -7,7 +7,12 @@ import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from discord.ext import commands
-from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
+from libs.utils import (
+    RoboContext,
+    RodhajCommandTree,
+    RodhajHelp,
+    send_error_embed,
+)
 
 _fsw = True
 try:
@@ -33,7 +38,7 @@ class Rodhaj(commands.Bot):
                 type=discord.ActivityType.watching, name="a game"
             ),
             command_prefix=["r>", "?", "!"],
-            help_command=None,  # I need to create one
+            help_command=RodhajHelp(),
             intents=intents,
             tree_cls=RodhajCommandTree,
             *args,

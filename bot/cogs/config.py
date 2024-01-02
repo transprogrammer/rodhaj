@@ -6,6 +6,7 @@ import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
 from libs.utils import RoboContext, is_manager
+
 from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -88,6 +89,10 @@ class Config(commands.Cog):
     def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
         self.pool = self.bot.pool
+
+    @property
+    def display_emoji(self) -> discord.PartialEmoji:
+        return discord.PartialEmoji(name="\U0001f6e0")
 
     @alru_cache()
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
