@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import platform
+from time import perf_counter
 
 import discord
 import psutil
@@ -8,6 +9,7 @@ import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta, is_docker
+
 from rodhaj import Rodhaj
 
 
@@ -120,6 +122,25 @@ class Utilities(commands.Cog):
         )
         embed.add_field(name="Version", value=str(self.bot.version))
         embed.add_field(name="Uptime", value=self.get_bot_uptime(brief=True))
+        await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="ping")
+    async def ping(self, ctx: RoboContext) -> None:
+        """Obtains ping information"""
+        start = perf_counter()
+        await self.bot.pool.fetchrow("SELECT 1")
+        end = perf_counter()
+        db_ping = end - start
+
+        embed = Embed()
+        embed.add_field(
+            name="DB Latency", value=f"```{db_ping * 1000:.2f}ms```", inline=False
+        )
+        embed.add_field(
+            name="Websocket Latency",
+            value=f"```{self.bot.latency * 1000:.2f}ms```",
+            inline=False,
+        )
         await ctx.send(embed=embed)
 
     @commands.hybrid_command(name="uptime")
