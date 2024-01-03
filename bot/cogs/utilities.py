@@ -8,6 +8,7 @@ import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta
+
 from rodhaj import Rodhaj
 
 
@@ -96,7 +97,7 @@ class Utilities(commands.Cog):
             text=footer_text,
             icon_url="https://cdn.discordapp.com/emojis/596577034537402378.png",
         )
-        embed.add_field(name="Servers", value=len(self.bot.guilds))
+        embed.add_field(name="Servers", value=guilds)
         embed.add_field(
             name="User", value=f"{total_members} total\n{total_unique} unique"
         )
