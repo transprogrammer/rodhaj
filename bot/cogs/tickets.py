@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -85,6 +86,10 @@ class Tickets(commands.Cog):
         self.logger = self.bot.logger
         self.reserved_tags: dict[int, ReservedTags] = {}
         self.in_progress_tickets: dict[int, StatusChecklist] = {}
+
+    @property
+    def display_emoji(self) -> discord.PartialEmoji:
+        return discord.PartialEmoji(name="\U0001f3ab")
 
     ### Tag selection utils
 
