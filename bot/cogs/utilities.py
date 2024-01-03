@@ -8,6 +8,7 @@ import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta, is_docker
+
 from rodhaj import Rodhaj
 
 
@@ -51,6 +52,12 @@ class Utilities(commands.Cog):
         )
         return "\n".join(self.format_commit(c) for c in commits)
 
+    def get_current_branch(
+        self,
+    ) -> str:
+        repo = pygit2.Repository(".git")
+        return repo.head.shorthand
+
     async def fetch_num_active_tickets(self) -> int:
         query = "SELECT COUNT(*) FROM tickets;"
         value = await self.bot.pool.fetchval(query)
@@ -77,12 +84,13 @@ class Utilities(commands.Cog):
         memory_usage = self.process.memory_full_info().uss / 1024**2
         cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
 
-        revisions = self.get_last_commits()
-        revision_text = f"\n\nLatest Changes:\n {revisions}"
-        if is_docker():
-            revision_text = (
-                "\n\nSee [GitHub](https://github.com/transprogrammer/rodhaj)"
-            )
+        revisions = "See [GitHub](https://github.com/transprogrammer/rodhaj)"
+        working_branch = "Docker"
+
+        if not is_docker():
+            revisions = self.get_last_commits()
+            working_branch = self.get_current_branch()
+
         footer_text = (
             "Developed by Noelle and the Transprogrammer dev team\n"
             f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}"
@@ -95,7 +103,7 @@ class Utilities(commands.Cog):
             "the transprogrammer community. By creating a shared inbox, "
             "it allows for users and staff to seamlessly communicate safely, securely, and privately. "
             "In order to start using Rodhaj, please DM Rodhaj to make a ticket. "
-            f"{revision_text}"
+            f"\n\nLatest Changes ({working_branch}):\n {revisions}"
         )
         embed.set_footer(
             text=footer_text,
