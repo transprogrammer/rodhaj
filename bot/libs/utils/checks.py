@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Callable, TypeVar
 
 from discord import app_commands
@@ -50,3 +51,16 @@ def is_mod():
 
 def is_admin():
     return hybrid_permissions_check(administrator=True)
+
+
+def is_docker() -> bool:
+    """Checks if the current environment is running in Docker
+
+    Returns:
+        bool: Returns `True` if in fact it is an Docker environment,
+        `False` if not
+    """
+    path = "/proc/self/cgroup"
+    return os.path.exists("/.dockerenv") or (
+        os.path.isfile(path) and any("docker" in line for line in open(path))
+    )

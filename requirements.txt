@@ -1,0 +1,14 @@
+discord.py[speed]==2.3.2
+uvloop==0.19.0 ; sys_platform != "win32"
+winloop==0.1.0 ; sys_platform == "win32"
+asyncpg==0.29.0
+discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@8686b5d1bbc1d3c862292eb436ab630d6e9c9b53
+psutil==5.9.7
+pygit2==1.13.3
+python-dateutil==2.8.2
+click==8.1.7
+typing-extensions==4.9.0
+environs==10.0.0
+async-lru==2.0.4
+msgspec==0.18.5
+jishaku==2.5.2

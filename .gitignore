@@ -124,6 +124,7 @@ celerybeat.pid
 .venv
 env/
 venv/
+rodhaj-venv/
 ENV/
 env.bak/
 venv.bak/

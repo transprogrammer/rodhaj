@@ -1,49 +1,26 @@
 ####################################################################################################
-## Builder image
-####################################################################################################
-FROM python:3.11-slim-bookworm AS builder
-
-ENV DEBIAN_FRONTEND=noninteractive 
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  curl \
-  git \
-  && apt-get clean
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-RUN curl -sSL https://install.python-poetry.org | python -
-ENV PATH="${PATH}:/root/.local/bin"
-
-WORKDIR /rodhaj
-COPY /pyproject.toml /rodhaj/
-COPY /poetry.lock /rodhaj/
-
-RUN poetry export --output requirements.txt --without-hashes --only main
-
-####################################################################################################
 ## Final image
 ####################################################################################################
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   tini \
   bash \
   netcat-traditional \
-  libopus-dev \
   libffi-dev \
-  libsodium-dev \
   git \
+  gcc \
+  libc6-dev \
   && apt-get clean
 
 WORKDIR /rodhaj
 COPY /bot /rodhaj/bot/
 COPY /docker/start.sh /rodhaj/start.sh
 COPY /docker/wait-for /rodhaj/wait-for
-
-COPY --from=builder /rodhaj/requirements.txt /rodhaj/requirements.txt
+COPY /requirements.txt /rodhaj/requirements.txt
 
 RUN adduser --disabled-password --gecos "" rodhaj \
   && chown -R rodhaj:rodhaj /rodhaj \

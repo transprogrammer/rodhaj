@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
 
-from .paginator import HajPages
+from .paginator import RoboPages
 from .sources import SimplePageSource
 
 
-class SimplePages(HajPages):
+class SimplePages(RoboPages):
     """A simple pagination session reminiscent of the old Pages interface.
 
     Basically an embed with some normal formatting.
