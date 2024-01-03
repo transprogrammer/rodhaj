@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -373,9 +374,10 @@ class Tickets(commands.Cog):
         # We might want to have these as a chain of embeds but eh
         embed = ReplyEmbed(author=ctx.author)
         embed.description = safe_content(message)
-        await self.tick_post(ctx)
 
         if isinstance(ctx.channel, discord.Thread):
+            # May hit the ratelimit hard. Note this
+            await ctx.message.delete()
             await tw.send(
                 content=message,
                 username=f"[REPLY] {ctx.author.display_name}",
