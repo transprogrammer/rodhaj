@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -380,7 +381,7 @@ class Tickets(commands.Cog):
 
         if isinstance(ctx.channel, discord.Thread):
             # May hit the ratelimit hard. Note this
-            await ctx.message.delete()
+            await ctx.message.delete(delay=30.0)
             await tw.send(
                 content=message,
                 username=f"[REPLY] {ctx.author.display_name}",
