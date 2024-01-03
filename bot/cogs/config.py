@@ -89,6 +89,10 @@ class Config(commands.Cog):
         self.bot = bot
         self.pool = self.bot.pool
 
+    @property
+    def display_emoji(self) -> discord.PartialEmoji:
+        return discord.PartialEmoji(name="\U0001f6e0")
+
     @alru_cache()
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
         # Normally using the star is bad practice but...

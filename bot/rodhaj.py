@@ -1,5 +1,4 @@
 import logging
-import signal
 from pathlib import Path
 from typing import Union
 
@@ -8,7 +7,12 @@ import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from discord.ext import commands
-from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
+from libs.utils import (
+    RoboContext,
+    RodhajCommandTree,
+    RodhajHelp,
+    send_error_embed,
+)
 
 _fsw = True
 try:
@@ -34,7 +38,7 @@ class Rodhaj(commands.Bot):
                 type=discord.ActivityType.watching, name="a game"
             ),
             command_prefix=["r>", "?", "!"],
-            help_command=None,  # I need to create one
+            help_command=RodhajHelp(),
             intents=intents,
             tree_cls=RodhajCommandTree,
             *args,
@@ -66,12 +70,6 @@ class Rodhaj(commands.Bot):
         await send_error_embed(ctx, error)
 
     async def setup_hook(self) -> None:
-        def stop():
-            self.loop.create_task(self.close())
-
-        self.loop.add_signal_handler(signal.SIGTERM, stop)
-        self.loop.add_signal_handler(signal.SIGINT, stop)
-
         for extension in EXTENSIONS:
             await self.load_extension(extension)
 

@@ -11,7 +11,7 @@ BE = TypeVar("BE", bound=BaseException)
 class RodhajLogger:
     def __init__(self) -> None:
         self.self = self
-        self.log = logging.getLogger("zoee")
+        self.log = logging.getLogger("rodhaj")
 
     def __enter__(self) -> None:
         max_bytes = 32 * 1024 * 1024  # 32 MiB
@@ -25,7 +25,7 @@ class RodhajLogger:
             backupCount=5,
         )
         fmt = logging.Formatter(
-            fmt="%(asctime)s %(levelname)s    %(message)s",
+            fmt="%(asctime)s %(levelname)s\t%(message)s",
             datefmt="[%Y-%m-%d %H:%M:%S]",
         )
         handler.setFormatter(fmt)
