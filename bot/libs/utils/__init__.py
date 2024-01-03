@@ -1,5 +1,6 @@
 from .checks import (
     is_admin as is_admin,
+    is_docker as is_docker,
     is_manager as is_manager,
     is_mod as is_mod,
 )

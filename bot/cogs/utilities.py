@@ -7,7 +7,8 @@ import psutil
 import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
-from libs.utils import Embed, RoboContext, human_timedelta
+from libs.utils import Embed, RoboContext, human_timedelta, is_docker
+
 from rodhaj import Rodhaj
 
 
@@ -78,6 +79,11 @@ class Utilities(commands.Cog):
         cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
 
         revisions = self.get_last_commits()
+        revision_text = f"\n\nLatest Changes:\n {revisions}"
+        if is_docker():
+            revision_text = (
+                "\n\nSee [GitHub](https://github.com/transprogrammer/rodhaj)"
+            )
         footer_text = (
             "Developed by Noelle and the Transprogrammer dev team\n"
             f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}"
@@ -90,7 +96,7 @@ class Utilities(commands.Cog):
             "the transprogrammer community. By creating a shared inbox, "
             "it allows for users and staff to seamlessly communicate safely, securely, and privately. "
             "In order to start using Rodhaj, please DM Rodhaj to make a ticket. "
-            f"\n\nLatest Changes:\n {revisions}"
+            f"{revision_text}"
         )
         embed.set_footer(
             text=footer_text,
