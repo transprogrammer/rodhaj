@@ -10,7 +10,7 @@ from .modals import NumberedPageModal
 
 
 # This is originally from RoboDanny's Paginator class (RoboPages)
-class HajPages(discord.ui.View):
+class RoboPages(discord.ui.View):
     def __init__(
         self,
         source: menus.PageSource,

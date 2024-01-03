@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import signal
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -14,7 +13,12 @@ from discord.ext import commands
 from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.tickets.views import TicketConfirmView
-from libs.utils import RoboContext, RodhajCommandTree, send_error_embed
+from libs.utils import (
+    RoboContext,
+    RodhajCommandTree,
+    RodhajHelp,
+    send_error_embed,
+)
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
@@ -45,7 +49,7 @@ class Rodhaj(commands.Bot):
                 type=discord.ActivityType.watching, name="a game"
             ),
             command_prefix=["r>", "?", "!"],
-            help_command=None,  # I need to create one
+            help_command=RodhajHelp(),
             intents=intents,
             tree_cls=RodhajCommandTree,
             *args,
@@ -194,12 +198,6 @@ class Rodhaj(commands.Bot):
         await self.process_commands(message, ctx)
 
     async def setup_hook(self) -> None:
-        def stop():
-            self.loop.create_task(self.close())
-
-        self.loop.add_signal_handler(signal.SIGTERM, stop)
-        self.loop.add_signal_handler(signal.SIGINT, stop)
-
         for extension in EXTENSIONS:
             await self.load_extension(extension)
 
