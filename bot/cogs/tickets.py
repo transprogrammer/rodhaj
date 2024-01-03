@@ -1,20 +1,26 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, Annotated, NamedTuple, Optional, Union
 
 import asyncpg
 import discord
+from async_lru import alru_cache
 from discord.ext import commands
 from discord.utils import format_dt, utcnow
 from libs.tickets.structs import ReservedTags, StatusChecklist, TicketThread
-from libs.tickets.utils import get_cached_thread, get_partial_ticket
+from libs.tickets.utils import (
+    get_cached_thread,
+    get_partial_ticket,
+    safe_content,
+)
 from libs.utils.embeds import Embed, LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
-    from libs.utils import RoboContext
+    from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -34,6 +40,19 @@ def is_ticket_or_dm():
     return commands.check(pred)
 
 
+def is_ticket_thread():
+    def pred(ctx: RoboContext) -> bool:
+        partial_config = ctx.partial_config
+        return (
+            isinstance(ctx.channel, discord.Thread)
+            and ctx.guild is not None
+            and partial_config is not None
+            and ctx.channel.parent_id == partial_config.ticket_channel_id
+        )
+
+    return commands.check(pred)
+
+
 class TicketOutput(NamedTuple):
     status: bool
     ticket: discord.channel.ThreadWithMessage
@@ -47,6 +66,15 @@ class ClosedEmbed(discord.Embed):
         kwargs.setdefault("timestamp", discord.utils.utcnow())
         super().__init__(**kwargs)
         self.set_footer(text="Ticket closed at")
+
+
+class ReplyEmbed(discord.Embed):
+    def __init__(self, author: Union[discord.User, discord.Member], **kwargs):
+        kwargs.setdefault("color", discord.Color.from_rgb(246, 194, 255))
+        kwargs.setdefault("timestamp", discord.utils.utcnow())
+        super().__init__(**kwargs)
+        self.set_footer(text="Sent at")
+        self.set_author(name=author.global_name, icon_url=author.display_avatar.url)
 
 
 class Tickets(commands.Cog):
@@ -249,6 +277,21 @@ class Tickets(commands.Cog):
                     msg="Ticket successfully created. In order to use this ticket, please continue sending messages to Rodhaj. The messages will be directed towards the appropriate ticket.",
                 )
 
+    ### Obtaining owner of tickets
+    @alru_cache()
+    async def get_ticket_owner_id(self, thread_id: int) -> Optional[discord.User]:
+        query = """
+        SELECT owner_id
+        FROM tickets
+        WHERE thread_id = $1;
+        """
+        owner_id = await self.pool.fetchval(query, thread_id)
+        if owner_id is None:
+            self.get_ticket_owner_id.cache_invalidate(thread_id)
+            return None
+        user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
+        return user
+
     ### Misc Utils
 
     async def obtain_webhook(self, guild_id: int) -> Optional[discord.Webhook]:
@@ -270,6 +313,8 @@ class Tickets(commands.Cog):
         if solved_tag is None:
             return None
         return solved_tag
+
+    ### Feature commands
 
     @is_ticket_or_dm()
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
@@ -305,7 +350,42 @@ class Tickets(commands.Cog):
                 await conn.execute(query, closed_ticket.id, owner_id)
                 get_cached_thread.cache_invalidate(self.bot, owner_id, self.pool)
                 get_partial_ticket.cache_invalidate(self.bot, owner_id, self.pool)
+                self.get_ticket_owner_id.cache_invalidate(closed_ticket.id)
                 await self.notify_finished_ticket(ctx, owner_id)
+
+    @is_ticket_thread()
+    @commands.command(name="reply", aliases=["r"])
+    async def reply(
+        self, ctx: GuildContext, *, message: Annotated[str, commands.clean_content]
+    ) -> None:
+        """Replies back to the owner of the active ticket with a message"""
+        ticket_owner = await self.get_ticket_owner_id(ctx.channel.id)
+
+        if ticket_owner is None:
+            await ctx.send("No owner could be found for the current ticket")
+            return
+
+        dispatcher = GuildWebhookDispatcher(self.bot, ctx.guild.id)
+        tw = await dispatcher.get_ticket_webhook()
+        if tw is None:
+            await ctx.send("Could not find webhook")
+            return
+
+        # We might want to have these as a chain of embeds but eh
+        embed = ReplyEmbed(author=ctx.author)
+        embed.description = safe_content(message)
+        await self.tick_post(ctx)
+
+        if isinstance(ctx.channel, discord.Thread):
+            await tw.send(
+                content=message,
+                username=f"[REPLY] {ctx.author.display_name}",
+                avatar_url=ctx.author.display_avatar.url,
+                thread=ctx.channel,
+            )
+        await ticket_owner.send(embed=embed)
+
+    ### Ticket information
 
     @is_ticket_or_dm()
     @commands.hybrid_command(name="is-active", aliases=["is_active"])

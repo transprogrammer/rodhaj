@@ -185,7 +185,7 @@ class Rodhaj(commands.Bot):
                 if webhook is not None:
                     await webhook.send(
                         message.content,
-                        username=author.display_name,
+                        username=f"[RESPONSE] {author.display_name}",
                         avatar_url=author.display_avatar.url,
                         thread=cached_thread.thread,
                     )
