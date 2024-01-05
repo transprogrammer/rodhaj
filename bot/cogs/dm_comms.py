@@ -1,5 +1,6 @@
-from discord import DMChannel, Message
+from discord import Message
 from discord.ext import commands
+from libs.utils import RoboContext
 from rodhaj import Rodhaj
 
 
@@ -8,9 +9,7 @@ class DmCommunications(commands.Cog):
         self._bot = bot
         self._pool = bot.pool
 
-    async def handle_user_no_thread(self, message: Message):
-        channel = message.channel
-        context = await self._bot.get_context(message)
+    async def handle_user_no_thread(self, context: RoboContext):
         result = await context.prompt(
             "Seems like you do not have an active thread. "
             + "Would you want to create one?",
@@ -20,12 +19,12 @@ class DmCommunications(commands.Cog):
 
         # Code to create thread here
         if result:
-            await channel.send(
+            await context.send(
                 "Thread created; please use the following "
                 + "thread for all further communications."
             )
         else:
-            await channel.send("No worries!")
+            await context.send("No worries!")
 
     async def handle_dm(self, message: Message):
         query = """
@@ -34,13 +33,16 @@ class DmCommunications(commands.Cog):
         WHERE owner_id = $1
         """
         row = await self._pool.fetchrow(query, message.author.id)
+
+        message_ctx = await self._bot.get_context(message)
         if row is None:
-            await self.handle_user_no_thread(message)
+            await self.handle_user_no_thread(message_ctx)
 
     @commands.Cog.listener()
     async def on_message(self, message: Message):
-        if isinstance(message.channel, DMChannel):
-            if not self._bot.user_is_this_bot(message.author):
+        if message.guild is None:
+            if not message.author.bot:
+                # private DM not from bot
                 await self.handle_dm(message)
 
 
