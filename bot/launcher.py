@@ -23,6 +23,7 @@ POSTGRES_URI = env("POSTGRES_URI")
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 
 async def main() -> None:

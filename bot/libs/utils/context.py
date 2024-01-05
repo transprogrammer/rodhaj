@@ -61,6 +61,7 @@ class RoboContext(commands.Context):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.partial_config = self.bot.partial_config
 
     async def prompt(
         self, message: str, *, timeout: float = 60.0, delete_after: bool = False
@@ -69,3 +70,7 @@ class RoboContext(commands.Context):
         view.message = await self.send(message, view=view, ephemeral=delete_after)
         await view.wait()
         return view.value
+
+
+class GuildContext(RoboContext):
+    guild: discord.Guild

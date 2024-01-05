@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 
+from .embeds import ErrorEmbed
 from .errors import produce_error_embed
 
 if TYPE_CHECKING:
@@ -44,4 +45,7 @@ class RoboView(discord.ui.View):
     async def on_timeout(self) -> None:
         # This is the only way you can really edit the original message
         if self.message:
-            await self.message.edit(view=None)
+            embed = ErrorEmbed()
+            embed.title = "\U00002757 Timed Out"
+            embed.description = "Timed out waiting for a response. Cancelling action..."
+            await self.message.edit(embed=embed, view=None)

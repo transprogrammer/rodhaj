@@ -59,7 +59,7 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 skips = ["B311", "B101"]
 
 [tool.ruff]
-ignore = ["E501", "N999", "E402"]
+ignore = ["E501", "N999", "E402", "S311"]
 select = ["E", "F", "N", "ASYNC", "S", "ERA"]
 
 [build-system]

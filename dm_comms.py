@@ -1,3 +1,10 @@
+# This cog is unloaded as I (Noelle)
+# don't want to delete this. More than likely
+# it will stay here as what I'll do is use my implementation
+# of the ticket system instead. This is now here for reference
+# purposes
+# - Noelle
+
 from discord import Message
 from discord.ext import commands
 from libs.utils import RoboContext

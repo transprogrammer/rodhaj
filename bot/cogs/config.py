@@ -1,4 +1,6 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 import asyncpg
 import discord
@@ -6,7 +8,9 @@ import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
 from libs.utils import RoboContext, is_manager
-from rodhaj import Rodhaj
+
+if TYPE_CHECKING:
+    from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
@@ -21,6 +25,7 @@ class GuildConfig(msgspec.Struct):
     ticket_channel_id: int
     logging_channel_id: int
     logging_broadcast_url: str
+    ticket_broadcast_url: str
     locked: bool = False
 
     @property
@@ -54,10 +59,18 @@ class GuildWebhookDispatcher:
             url=conf.logging_broadcast_url, session=self.session
         )
 
+    async def get_ticket_webhook(self) -> Optional[discord.Webhook]:
+        conf = await self.get_config()
+        if conf is None:
+            return None
+        return discord.Webhook.from_url(
+            url=conf.ticket_broadcast_url, session=self.session
+        )
+
     @alru_cache()
     async def get_config(self) -> Optional[GuildConfig]:
         query = """
-        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, locked
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, locked
         FROM guild_config
         WHERE id = $1;
         """
@@ -184,17 +197,24 @@ class Config(commands.Cog):
         forum_description = "\n".join(forum_description_content)
         forum_tags = [
             discord.ForumTag(
-                name="Question", emoji=discord.PartialEmoji(name="\U00002753")
+                name="Question",
+                emoji=discord.PartialEmoji(
+                    name="\U00002753"
+                ),  # U+2753 Black Question Mark Ornament
             ),
             discord.ForumTag(
-                name="Serious", emoji=discord.PartialEmoji(name="\U0001f610")
+                name="Serious",
+                emoji=discord.PartialEmoji(name="\U0001f610"),  # U+1F610 Neutral Face
             ),
             discord.ForumTag(
-                name="Private", emoji=discord.PartialEmoji(name="\U0001f512")
+                name="Private",
+                emoji=discord.PartialEmoji(name="\U0001f512"),  # U+1F512 Lock
             ),
             discord.ForumTag(
                 name="Resolved",
-                emoji=discord.PartialEmoji(name="\U00002705"),
+                emoji=discord.PartialEmoji(
+                    name="\U00002705"
+                ),  # U+2705 White Heavy Check Mark
                 moderated=True,
             ),
         ]
@@ -222,6 +242,9 @@ class Config(commands.Cog):
                 default_layout=discord.ForumLayoutType.list_view,
                 available_tags=forum_tags,
             )
+            tc_webhook = await ticket_channel.create_webhook(
+                name="Rodhaj User Proxy Webhook", avatar=avatar_bytes
+            )
         except discord.Forbidden:
             await ctx.send(
                 "\N{NO ENTRY SIGN} Rodhaj is missing permissions: Manage Channels and Manage Webhooks"
@@ -232,8 +255,8 @@ class Config(commands.Cog):
             return
 
         query = """
-        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url)
-        VALUES ($1, $2, $3, $4, $5);
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url)
+        VALUES ($1, $2, $3, $4, $5, $6);
         """
         try:
             await self.pool.execute(
@@ -243,6 +266,7 @@ class Config(commands.Cog):
                 ticket_channel.id,
                 logging_channel.id,
                 lgc_webhook.url,
+                tc_webhook.url,
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
