@@ -63,15 +63,7 @@ class Rodhaj(commands.Bot):
         self.version = str(VERSION)
         self._dev_mode = dev_mode
 
-    async def fs_watcher(self) -> None:
-        cogs_path = Path(__file__).parent.joinpath("cogs")
-        async for changes in awatch(cogs_path):
-            changes_list = list(changes)[0]
-            if changes_list[0].modified == 2:
-                reload_file = Path(changes_list[1])
-                self.logger.info(f"Reloading extension: {reload_file.name[:-3]}")
-                await self.reload_extension(f"cogs.{reload_file.name[:-3]}")
-
+    ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
         query = """
         SELECT id, ticket_channel_id, logging_channel_id
@@ -83,6 +75,8 @@ class Rodhaj(commands.Bot):
             return None
         return PartialConfig(rows)
 
+    ### Bot-related overrides
+
     async def get_context(
         self, origin: Union[discord.Interaction, discord.Message], /, *, cls=RoboContext
     ) -> RoboContext:
@@ -92,6 +86,8 @@ class Rodhaj(commands.Bot):
         self, ctx: commands.Context, error: commands.CommandError
     ) -> None:
         await send_error_embed(ctx, error)
+
+    ### Ticket processing and handling
 
     async def process_commands(
         self, message: discord.Message, /, ctx: RoboContext
@@ -196,6 +192,19 @@ class Rodhaj(commands.Bot):
 
             return
         await self.process_commands(message, ctx)
+
+    ### Dev related utils
+
+    async def fs_watcher(self) -> None:
+        cogs_path = Path(__file__).parent.joinpath("cogs")
+        async for changes in awatch(cogs_path):
+            changes_list = list(changes)[0]
+            if changes_list[0].modified == 2:
+                reload_file = Path(changes_list[1])
+                self.logger.info(f"Reloading extension: {reload_file.name[:-3]}")
+                await self.reload_extension(f"cogs.{reload_file.name[:-3]}")
+
+    ### Internal core overrides
 
     async def setup_hook(self) -> None:
         for extension in EXTENSIONS:
