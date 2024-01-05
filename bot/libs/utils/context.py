@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class ConfirmationView(RoboView):
     def __init__(self, ctx, timeout: float, delete_after: bool):
-        super().__init__(ctx, timeout)
+        super().__init__(ctx, timeout=timeout)
         self.value: Optional[bool] = None
         self.delete_after = delete_after
         self.message: Optional[discord.Message] = None
