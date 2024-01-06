@@ -64,10 +64,15 @@ class RoboContext(commands.Context):
         self.partial_config = self.bot.partial_config
 
     async def prompt(
-        self, message: str, *, timeout: float = 60.0, delete_after: bool = False
+        self,
+        message: str,
+        *,
+        timeout: float = 60.0,
+        ephemeral: bool = False,
+        delete_after: bool = False,
     ) -> Optional[bool]:
         view = ConfirmationView(ctx=self, timeout=timeout, delete_after=delete_after)
-        view.message = await self.send(message, view=view, ephemeral=delete_after)
+        view.message = await self.send(message, view=view, ephemeral=ephemeral)
         await view.wait()
         return view.value
 
