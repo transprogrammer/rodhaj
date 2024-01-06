@@ -7,7 +7,7 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
-from libs.utils import RoboContext, is_manager
+from libs.utils import GuildContext, is_manager
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -83,12 +83,12 @@ class GuildWebhookDispatcher:
 
 
 class SetupFlags(commands.FlagConverter):
-    ticket_name: str = commands.flag(
+    ticket_name: Optional[str] = commands.flag(
         name="ticket_name",
         default="tickets",
         description="The name of the ticket forum. Defaults to tickets",
     )
-    log_name: str = commands.flag(
+    log_name: Optional[str] = commands.flag(
         name="log_name",
         default="rodhaj-logs",
         description="The name of the logging channel. Defaults to rodhaj-logs",
@@ -112,7 +112,7 @@ class Config(commands.Cog):
         # Since I don't want to write out every single column to select,
         # we are going to use the star
         # The guild config roughly maps to it as well
-        query = "SELECT * FROM guild_config WHERE guild_id = $1;"
+        query = "SELECT * FROM guild_config WHERE id = $1;"
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
             return None
@@ -122,21 +122,18 @@ class Config(commands.Cog):
     @is_manager()
     @commands.guild_only()
     @commands.hybrid_group(name="config")
-    async def config(self, ctx: RoboContext) -> None:
+    async def config(self, ctx: GuildContext) -> None:
         """Commands to configure, setup, or delete Rodhaj"""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @config.command(name="setup")
-    async def setup(self, ctx: RoboContext, *, flags: SetupFlags) -> None:
+    @config.command(name="setup", usage="ticket_name: <str> log_name: <str>")
+    async def setup(self, ctx: GuildContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
 
         You only need to run this once
         """
-        if ctx.guild is None:
-            await ctx.send("Really? You can't set this up in DMs")
-            return
-
+        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
@@ -227,13 +224,13 @@ class Config(commands.Cog):
                 name="rodhaj", overwrites=rodhaj_overwrites, position=0
             )
             logging_channel = await rodhaj_category.create_text_channel(
-                name=flags.log_name, reason=lgc_reason, position=0
+                name=flags.log_name or "rodhaj-logs", reason=lgc_reason, position=0
             )
             lgc_webhook = await logging_channel.create_webhook(
                 name="Rodhaj Ticket Logs", avatar=avatar_bytes
             )
             ticket_channel = await rodhaj_category.create_forum(
-                name=flags.ticket_name,
+                name=flags.ticket_name or "tickets",
                 topic=forum_description,
                 position=1,
                 reason=forums_reason,
@@ -282,19 +279,16 @@ class Config(commands.Cog):
             await ctx.send(msg)
 
     @config.command(name="delete")
-    async def delete(self, ctx: RoboContext) -> None:
+    async def delete(self, ctx: GuildContext) -> None:
         """Permanently deletes Rodhaj channels and tickets."""
-        if ctx.guild is None:
-            await ctx.send("Really... This module is meant to be ran in a server")
-            return
-
+        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
         guild_config = await self.get_guild_config(guild_id)
 
         msg = "Are you really sure that you want to delete the Rodhaj channels?"
-        confirm = await ctx.prompt(msg, timeout=300.0)
+        confirm = await ctx.prompt(msg, timeout=300.0, delete_after=True)
         if confirm:
             if guild_config is None:
                 msg = (
@@ -324,11 +318,11 @@ class Config(commands.Cog):
                     return
 
             query = """
-            DELETE FROM guild_config WHERE guild_id = $1;
+            DELETE FROM guild_config WHERE id = $1;
             """
             await self.pool.execute(query, guild_id)
             dispatcher.get_config.cache_invalidate()
-            self.get_guild_config.cache_invalidate()
+            self.get_guild_config.cache_invalidate(guild_id)
             await ctx.send("Successfully deleted channels")
         elif confirm is None:
             await ctx.send("Not removing Rodhaj channels. Canceling.")
