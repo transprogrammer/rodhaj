@@ -27,7 +27,6 @@ Features
 Rodhaj offers these features in addition to ones found on ModMail:
 
 - Advanced tags system
-- Automatic ticket assignment (with manual override)
 - Modern touch using forum channels, webhooks, and best practices
 - Customizable settings
 

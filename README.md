@@ -19,8 +19,7 @@ The process is extremely similar to ModMail, but with major differences. When a 
 sends a direct message to the bot, Rodhaj will create a new ticket (which is a forum post)
 internally for staff to view. From there, each ticket is tied with a member and DMs from Rodhaj will be processed and sent to their respective tickets.
 
-To ensure that staff will be able to respond, each active staff is randomly assigned
-to a particular ticket. This ensures that tickets are evenly distributed among staff. Staff are free to swap and work on multiple tickets as needed. Once a ticket is closed, the staff will be automatically unassigned from the ticket, and a new DM to Rodhaj will prompt the user to create a new ticket. It's designed to be a replacement to ModMail.
+Staff are free to swap and work on multiple tickets as needed. Once a ticket is closed, the staff will be automatically unassigned from the ticket, and a new DM to Rodhaj will prompt the user to create a new ticket. In short, it's designed to be a replacement to ModMail.
 
 ## Contributing
 
