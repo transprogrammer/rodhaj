@@ -8,7 +8,7 @@ pygit2==1.13.3
 python-dateutil==2.8.2
 click==8.1.7
 typing-extensions==4.9.0
-environs==10.0.0
+environs==10.2.0
 async-lru==2.0.4
 msgspec==0.18.5
 jishaku==2.5.2
