@@ -19,6 +19,7 @@ from libs.utils import (
     RodhajHelp,
     send_error_embed,
 )
+from libs.utils.config import RodhajConfig
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
@@ -37,10 +38,10 @@ class Rodhaj(commands.Bot):
 
     def __init__(
         self,
+        config: RodhajConfig,
         intents: discord.Intents,
         session: ClientSession,
         pool: asyncpg.Pool,
-        dev_mode: bool = False,
         *args,
         **kwargs,
     ):
@@ -59,9 +60,9 @@ class Rodhaj(commands.Bot):
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
-        self.transprogrammer_guild_id = TRANSPROGRAMMER_GUILD_ID
+        self.transprogrammer_guild_id = config["guild_id"]
         self.version = str(VERSION)
-        self._dev_mode = dev_mode
+        self._dev_mode = config.get("dev_mode", False)
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:

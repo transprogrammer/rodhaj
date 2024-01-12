@@ -19,7 +19,6 @@ config_path = Path(__file__).parent / "config.json"
 config = RodhajConfig(config_path)
 
 TOKEN = config["token"]
-DEV_MODE = config.get("dev_mode", False)
 POSTGRES_URI = config["postgres_uri"]
 
 intents = discord.Intents.default()
@@ -32,7 +31,7 @@ async def main() -> None:
         dsn=POSTGRES_URI, min_size=25, max_size=25, command_timeout=30
     ) as pool:
         async with Rodhaj(
-            intents=intents, session=session, pool=pool, dev_mode=DEV_MODE
+            config=config, intents=intents, session=session, pool=pool
         ) as bot:
             bot.loop.add_signal_handler(signal.SIGTERM, KeyboardInterruptHandler(bot))
             bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
