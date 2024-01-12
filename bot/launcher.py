@@ -1,11 +1,13 @@
 import os
 import signal
+from pathlib import Path
 
 import asyncpg
 import discord
 from aiohttp import ClientSession
-from environs import Env
 from libs.utils import KeyboardInterruptHandler, RodhajLogger
+from libs.utils.config import RodhajConfig
+
 from rodhaj import Rodhaj
 
 if os.name == "nt":
@@ -13,13 +15,12 @@ if os.name == "nt":
 else:
     from uvloop import run
 
-# Hope not to trip pyright
-env = Env()
-env.read_env()
+config_path = Path(__file__).parent / "config.json"
+config = RodhajConfig(config_path)
 
-TOKEN = env("TOKEN")
-DEV_MODE = env.bool("DEV_MODE", False)
-POSTGRES_URI = env("POSTGRES_URI")
+TOKEN = config["token"]
+DEV_MODE = config.get("dev_mode", False)
+POSTGRES_URI = config["postgres_uri"]
 
 intents = discord.Intents.default()
 intents.message_content = True

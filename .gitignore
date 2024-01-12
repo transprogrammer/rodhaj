@@ -129,6 +129,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Rodhaj configurations
+config.json
+config.y[a]ml
+
 # Spyder project settings
 .spyderproject
 .spyproject

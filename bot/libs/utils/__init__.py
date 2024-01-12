@@ -4,6 +4,7 @@ from .checks import (
     is_manager as is_manager,
     is_mod as is_mod,
 )
+from .config import RodhajConfig as RodhajConfig
 from .context import GuildContext as GuildContext, RoboContext as RoboContext
 from .embeds import (
     Embed as Embed,
