@@ -30,8 +30,6 @@ try:
 except ImportError:
     _fsw = False
 
-TRANSPROGRAMMER_GUILD_ID = 1183302385020436480
-
 
 class Rodhaj(commands.Bot):
     """Main bot for Rodhaj"""
@@ -60,7 +58,7 @@ class Rodhaj(commands.Bot):
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
-        self.transprogrammer_guild_id = config["guild_id"]
+        self.transprogrammer_guild_id = config.get("guild_id", 1183302385020436480)
         self.version = str(VERSION)
         self._dev_mode = config.get("dev_mode", False)
 
