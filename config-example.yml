@@ -1,0 +1,9 @@
+# Rodhaj's config file
+
+# Entries pertaining to Rodhaj are located here
+rodhaj:
+  token: ""
+  guild_id: 12345
+
+# The URI to connect to the PostgreSQL database
+postgres_uri: "postgresql://user:password@localhost:5432/user"
