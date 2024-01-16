@@ -15,10 +15,10 @@ if os.name == "nt":
 else:
     from uvloop import run
 
-config_path = Path(__file__).parent / "config.json"
+config_path = Path(__file__).parent / "config.yml"
 config = RodhajConfig(config_path)
 
-TOKEN = config["token"]
+TOKEN = config["rodhaj"]["token"]
 POSTGRES_URI = config["postgres_uri"]
 
 intents = discord.Intents.default()

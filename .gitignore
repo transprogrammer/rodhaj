@@ -131,7 +131,8 @@ venv.bak/
 
 # Rodhaj configurations
 config.json
-config.y[a]ml
+config.yml
+config.yaml
 
 # Spyder project settings
 .spyderproject

@@ -58,9 +58,11 @@ class Rodhaj(commands.Bot):
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
-        self.transprogrammer_guild_id = config.get("guild_id", 1183302385020436480)
         self.version = str(VERSION)
-        self._dev_mode = config.get("dev_mode", False)
+        self.transprogrammer_guild_id = config["rodhaj"].get(
+            "guild_id", 1183302385020436480
+        )
+        self._dev_mode = config["rodhaj"].get("dev_mode", False)
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
