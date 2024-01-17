@@ -129,6 +129,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Docker Compose ENV
+docker-compose.env
+
 # Rodhaj configurations
 config.json
 config.yml
