@@ -127,6 +127,7 @@ class Config(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
+    @commands.cooldown(1, 20, commands.BucketType.guild)
     @config.command(name="setup", usage="ticket_name: <str> log_name: <str>")
     async def setup(self, ctx: GuildContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
@@ -278,6 +279,7 @@ class Config(commands.Cog):
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
 
+    @commands.cooldown(1, 20, commands.BucketType.guild)
     @config.command(name="delete")
     async def delete(self, ctx: GuildContext) -> None:
         """Permanently deletes Rodhaj channels and tickets."""
