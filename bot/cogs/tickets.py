@@ -320,6 +320,7 @@ class Tickets(commands.Cog):
     ### Feature commands
 
     @is_ticket_or_dm()
+    @commands.cooldown(1, 20, commands.BucketType.channel)
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
         """Closes the thread"""
@@ -356,7 +357,11 @@ class Tickets(commands.Cog):
                 self.get_ticket_owner_id.cache_invalidate(closed_ticket.id)
                 await self.notify_finished_ticket(ctx, owner_id)
 
+    # 10 command invocations per 12 seconds for each member
+    # These values should not be tripped unless someone is spamming
+    # https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/mod.py#L524C9-L524C74
     @is_ticket_thread()
+    @commands.cooldown(10, 12, commands.BucketType.member)
     @commands.command(name="reply", aliases=["r"])
     async def reply(
         self, ctx: GuildContext, *, message: Annotated[str, commands.clean_content]
