@@ -7,7 +7,8 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
-from libs.utils import GuildContext, is_manager
+from libs.utils import GuildContext
+from libs.utils.checks import bot_check_permissions, check_permissions
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -119,7 +120,8 @@ class Config(commands.Cog):
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
 
-    @is_manager()
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
     @commands.hybrid_group(name="config")
     async def config(self, ctx: GuildContext) -> None:
