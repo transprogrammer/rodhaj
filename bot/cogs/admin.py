@@ -104,7 +104,7 @@ class Admin(commands.Cog, command_attrs=dict(hidden=True)):
     # To learn more about it, see the link below (and ?tag ass on the dpy server):
     # https://about.abstractumbra.dev/discord.py/2023/01/29/sync-command-example.html
     @commands.guild_only()
-    @commands.command(name="sync")
+    @commands.command(name="sync", hidden=True)
     async def sync(
         self,
         ctx: RoboContext,
