@@ -19,10 +19,10 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
-STAFF_ROLE = 1184257456419913798
 TICKET_EMOJI = "\U0001f3ab"  # U+1F3AB Ticket
 
 

@@ -73,7 +73,6 @@ def bot_check_permissions(**perms: bool) -> Callable[[T], T]:
         return await check_bot_permissions(ctx, perms)
 
     def decorator(func: T) -> T:
-        func.extras["permissions"] = perms
         commands.check(pred)(func)
         app_commands.default_permissions(**perms)(func)
         return func
