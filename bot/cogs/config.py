@@ -255,8 +255,8 @@ class Config(commands.Cog):
             return
 
         query = """
-        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url)
-        VALUES ($1, $2, $3, $4, $5, $6);
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix)
+        VALUES ($1, $2, $3, $4, $5, $6, $7);
         """
         try:
             await self.pool.execute(
@@ -267,6 +267,7 @@ class Config(commands.Cog):
                 logging_channel.id,
                 lgc_webhook.url,
                 tc_webhook.url,
+                [],
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
