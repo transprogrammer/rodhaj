@@ -13,7 +13,9 @@ from .pages import RoboPages
 # Light Orange (255, 199, 184) - Used for command pages
 
 
-def process_perms_name(command: Union[commands.Group, commands.Command]):
+def process_perms_name(
+    command: Union[commands.Group, commands.Command]
+) -> Optional[str]:
     merge_list = []
     if (
         all(isinstance(parent, commands.Group) for parent in command.parents)
@@ -28,6 +30,8 @@ def process_perms_name(command: Union[commands.Group, commands.Command]):
         merge_list.extend([*command.extras["permissions"]])
 
     perms_set = sorted(set(merge_list))
+    if len(perms_set) == 0:
+        return None
     return ", ".join(name.replace("_", " ").title() for name in perms_set)
 
 
