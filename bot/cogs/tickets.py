@@ -13,12 +13,14 @@ from libs.tickets.utils import (
     get_partial_ticket,
     safe_content,
 )
+from libs.utils.checks import bot_check_permissions
 from libs.utils.embeds import Embed, LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -303,7 +305,9 @@ class Tickets(commands.Cog):
 
     ### Feature commands
 
+    # This command requires the manage_threads permissions for the bot
     @is_ticket_or_dm()
+    @bot_check_permissions(manage_threads=True)
     @commands.cooldown(1, 20, commands.BucketType.channel)
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
