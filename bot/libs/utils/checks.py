@@ -7,9 +7,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-T = TypeVar(
-    "T", commands.Command, commands.HybridCommand, commands.Group, commands.HybridGroup
-)
+# Although commands.HybridCommand (and it's group version) can be bound here for Type T,
+# it doesn't make sense as they are just subclasses of commands.Command and co.
+T = TypeVar("T", commands.Command, commands.Group)
 
 if TYPE_CHECKING:
     from libs.utils.context import RoboContext
