@@ -13,6 +13,28 @@ from .pages import RoboPages
 # Light Orange (255, 199, 184) - Used for command pages
 
 
+def process_perms_name(
+    command: Union[commands.Group, commands.Command]
+) -> Optional[str]:
+    merge_list = []
+    if (
+        all(isinstance(parent, commands.Group) for parent in command.parents)
+        and len(command.parents) > 0
+    ):
+        # See https://stackoverflow.com/a/27638751
+        merge_list = [
+            next(iter(parent.extras["permissions"])) for parent in command.parents
+        ]
+
+    if "permissions" in command.extras:
+        merge_list.extend([*command.extras["permissions"]])
+
+    perms_set = sorted(set(merge_list))
+    if len(perms_set) == 0:
+        return None
+    return ", ".join(name.replace("_", " ").title() for name in perms_set)
+
+
 class GroupHelpPageSource(menus.ListPageSource):
     def __init__(
         self,
@@ -27,10 +49,15 @@ class GroupHelpPageSource(menus.ListPageSource):
         self.title: str = f"{self.group.qualified_name} Commands"
         self.description: str = self.group.description
 
+    def _process_description(self, group: Union[commands.Group, commands.Cog]):
+        if isinstance(group, commands.Group) and "permissions" in group.extras:
+            return f"{self.description}\n\n**Required Permissions**: {process_perms_name(group)}"
+        return self.description
+
     async def format_page(self, menu: RoboPages, commands: list[commands.Command]):
         embed = discord.Embed(
             title=self.title,
-            description=self.description,
+            description=self._process_description(self.group),
             colour=discord.Colour.from_rgb(197, 184, 255),
         )
 
@@ -271,8 +298,16 @@ class RodhajHelp(commands.HelpCommand):
         )
         await menu.start()
 
-    def common_command_formatting(self, embed_like, command):
+    def common_command_formatting(
+        self,
+        embed_like: Union[discord.Embed, GroupHelpPageSource],
+        command: commands.Command,
+    ):
         embed_like.title = self.get_command_signature(command)
+        processed_perms = process_perms_name(command)
+        if isinstance(embed_like, discord.Embed) and processed_perms is not None:
+            embed_like.add_field(name="Required Permissions", value=processed_perms)
+
         if command.description:
             embed_like.description = f"{command.description}\n\n{command.help}"
         else:
