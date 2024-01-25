@@ -51,8 +51,10 @@ async def check_bot_permissions(
 def check_permissions(**perms: bool) -> Callable[[T], T]:
     async def pred(ctx: RoboContext):
         # Usually means this is in the context of a DM
-        if isinstance(ctx.me, discord.ClientUser) or isinstance(
-            ctx.author, discord.User
+        if (
+            isinstance(ctx.me, discord.ClientUser)
+            or isinstance(ctx.author, discord.User)
+            or ctx.guild is None
         ):
             return False
         guild_perms = await check_guild_permissions(ctx, perms)
