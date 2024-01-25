@@ -48,6 +48,9 @@ class Rodhaj(commands.Bot):
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="a game"
             ),
+            allowed_mentions=discord.AllowedMentions(
+                everyone=False, replied_user=False
+            ),
             command_prefix=["r>", "?", "!"],
             help_command=RodhajHelp(),
             intents=intents,
