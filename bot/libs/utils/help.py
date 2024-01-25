@@ -304,10 +304,9 @@ class RodhajHelp(commands.HelpCommand):
         command: commands.Command,
     ):
         embed_like.title = self.get_command_signature(command)
-        if isinstance(embed_like, discord.Embed):
-            embed_like.add_field(
-                name="Required Permissions", value=process_perms_name(command)
-            )
+        processed_perms = process_perms_name(command)
+        if isinstance(embed_like, discord.Embed) and processed_perms is not None:
+            embed_like.add_field(name="Required Permissions", value=processed_perms)
 
         if command.description:
             embed_like.description = f"{command.description}\n\n{command.help}"
