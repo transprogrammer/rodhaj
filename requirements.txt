@@ -12,3 +12,4 @@ environs==10.3.0
 async-lru==2.0.4
 msgspec==0.18.6
 jishaku==2.5.2
+watchfiles>=0.21.0,<1

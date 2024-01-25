@@ -22,6 +22,7 @@ environs = "^10.3.0"
 async-lru = "^2.0.4"
 msgspec = "^0.18.6"
 jishaku = "^2.5.2"
+watchfiles = "^0.21.0"
 
 [tool.poetry.group.dev.dependencies]
 # These are pinned by major version
@@ -30,7 +31,6 @@ jishaku = "^2.5.2"
 pre-commit = "^3"
 pyright = "^1.1"
 ruff = "^0.1"
-watchfiles = "^0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
