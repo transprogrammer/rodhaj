@@ -10,7 +10,7 @@ readme = "README.md"
 python = ">=3.9,<4"
 discord-py = {extras = ["speed"], version = "^2.3.2"}
 uvloop = {markers = "sys_platform != \"win32\"", version = "^0.19.0"}
-winloop = {markers = "sys_platform == \"win32\"", version = "^0.1.0"}
+winloop = {markers = "sys_platform == \"win32\"", version = "^0.1.1"}
 asyncpg = "^0.29.0"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
 psutil = "^5.9.8"
