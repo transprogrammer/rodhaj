@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import TYPE_CHECKING, Annotated, NamedTuple, Optional, Union
 
 import asyncpg
@@ -14,16 +13,17 @@ from libs.tickets.utils import (
     get_partial_ticket,
     safe_content,
 )
+from libs.utils.checks import bot_check_permissions
 from libs.utils.embeds import Embed, LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
-STAFF_ROLE = 1184257456419913798
 TICKET_EMOJI = "\U0001f3ab"  # U+1F3AB Ticket
 
 
@@ -101,15 +101,6 @@ class Tickets(commands.Cog):
     ) -> StatusChecklist:
         return self.in_progress_tickets.setdefault(author_id, status)
 
-    #### Determining staff
-
-    @lru_cache(maxsize=64)
-    def get_staff(self, guild: discord.Guild) -> Optional[list[discord.Member]]:
-        mod_role = guild.get_role(STAFF_ROLE)
-        if mod_role is None:
-            return None
-        return [member for member in mod_role.members]
-
     ### Conditions for closing tickets
 
     async def can_close_ticket(self, ctx: RoboContext):
@@ -128,22 +119,17 @@ class Tickets(commands.Cog):
         return False
 
     async def can_admin_close_ticket(self, ctx: RoboContext) -> bool:
-        guild_id = self.bot.transprogrammer_guild_id
-        guild = self.bot.get_guild(guild_id) or (await self.bot.fetch_guild(guild_id))
-        staff_members = self.get_staff(guild)
-
-        if staff_members is None:
-            return False
-
-        # TODO: Add the hierarchy system here
-        staff_ids = [member.id for member in staff_members]
+        # More than likely it will be closed through the threads
+        # That means, it must be done in a guild. Thus, we know that
+        # it will always be discord.Member
+        perms = ctx.channel.permissions_for(ctx.author)  # type: ignore
         from_ticket_channel = (
             isinstance(ctx.channel, discord.Thread)
             and ctx.partial_config is not None
             and ctx.channel.parent_id == ctx.partial_config.ticket_channel_id
         )
 
-        if ctx.author.id in staff_ids and from_ticket_channel is True:
+        if perms.manage_threads and from_ticket_channel is True:
             return True
         return False
 
@@ -319,10 +305,18 @@ class Tickets(commands.Cog):
 
     ### Feature commands
 
+    # This command requires the manage_threads permissions for the bot
     @is_ticket_or_dm()
+    @bot_check_permissions(manage_threads=True)
+    @commands.cooldown(1, 20, commands.BucketType.channel)
     @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
-        """Closes the thread"""
+        """Closes a ticket
+
+        If someone requests to close the ticket
+        and has Manage Threads permissions, then they can
+        also close the ticket.
+        """
         query = """
         DELETE FROM tickets
         WHERE thread_id = $1 AND owner_id = $2;
@@ -356,7 +350,11 @@ class Tickets(commands.Cog):
                 self.get_ticket_owner_id.cache_invalidate(closed_ticket.id)
                 await self.notify_finished_ticket(ctx, owner_id)
 
+    # 10 command invocations per 12 seconds for each member
+    # These values should not be tripped unless someone is spamming
+    # https://github.com/Rapptz/RoboDanny/blob/rewrite/cogs/mod.py#L524C9-L524C74
     @is_ticket_thread()
+    @commands.cooldown(10, 12, commands.BucketType.member)
     @commands.command(name="reply", aliases=["r"])
     async def reply(
         self, ctx: GuildContext, *, message: Annotated[str, commands.clean_content]

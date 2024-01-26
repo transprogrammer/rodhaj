@@ -20,15 +20,10 @@ from libs.utils import (
     send_error_embed,
 )
 from libs.utils.config import RodhajConfig
+from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
-
-_fsw = True
-try:
-    from watchfiles import awatch
-except ImportError:
-    _fsw = False
 
 
 class Rodhaj(commands.Bot):
@@ -47,6 +42,9 @@ class Rodhaj(commands.Bot):
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="a game"
             ),
+            allowed_mentions=discord.AllowedMentions(
+                everyone=False, replied_user=False
+            ),
             command_prefix=["r>", "?", "!"],
             help_command=RodhajHelp(),
             intents=intents,
@@ -63,6 +61,7 @@ class Rodhaj(commands.Bot):
             "guild_id", 1183302385020436480
         )
         self._dev_mode = config["rodhaj"].get("dev_mode", False)
+        self._reloader = Reloader(self, Path(__file__).parent)
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
@@ -194,17 +193,6 @@ class Rodhaj(commands.Bot):
             return
         await self.process_commands(message, ctx)
 
-    ### Dev related utils
-
-    async def fs_watcher(self) -> None:
-        cogs_path = Path(__file__).parent.joinpath("cogs")
-        async for changes in awatch(cogs_path):
-            changes_list = list(changes)[0]
-            if changes_list[0].modified == 2:
-                reload_file = Path(changes_list[1])
-                self.logger.info(f"Reloading extension: {reload_file.name[:-3]}")
-                await self.reload_extension(f"cogs.{reload_file.name[:-3]}")
-
     ### Internal core overrides
 
     async def setup_hook(self) -> None:
@@ -217,9 +205,9 @@ class Rodhaj(commands.Bot):
 
         self.partial_config = await self.fetch_partial_config()
 
-        if self._dev_mode is True and _fsw is True:
-            self.logger.info("Dev mode is enabled. Loading FSWatcher")
-            self.loop.create_task(self.fs_watcher())
+        if self._dev_mode:
+            self.logger.info("Dev mode is enabled. Loading Reloader")
+            self._reloader.start()
 
     async def on_ready(self):
         if not hasattr(self, "uptime"):

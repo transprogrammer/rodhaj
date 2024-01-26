@@ -17,6 +17,7 @@ class RodhajLogger:
         max_bytes = 32 * 1024 * 1024  # 32 MiB
         self.log.setLevel(logging.INFO)
         logging.getLogger("discord").setLevel(logging.INFO)
+        logging.getLogger("watchfiles").setLevel(logging.WARNING)
         handler = RotatingFileHandler(
             filename="rodhaj.log",
             encoding="utf-8",

@@ -29,27 +29,27 @@ def create_premade_embed(title: str, description: str) -> ErrorEmbed:
     return embed
 
 
+def build_cooldown_embed(error: commands.CommandOnCooldown) -> ErrorEmbed:
+    embed = ErrorEmbed()
+    embed.timestamp = discord.utils.utcnow()
+    embed.title = "Command On Cooldown"
+    embed.description = (
+        f"This command is on cooldown. Try again in {error.retry_after:.2f}s"
+    )
+    return embed
+
+
 async def send_error_embed(ctx: commands.Context, error: commands.CommandError) -> None:
-    if isinstance(error, commands.CommandInvokeError) or isinstance(
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.send(embed=build_cooldown_embed(error))
+    elif isinstance(error, commands.CommandInvokeError) or isinstance(
         error, commands.HybridCommandError
     ):
         await ctx.send(embed=produce_error_embed(error))
-    elif isinstance(error, commands.CommandNotFound):
-        await ctx.send(
+    elif isinstance(error, commands.NoPrivateMessage):
+        await ctx.author.send(
             embed=create_premade_embed(
-                "Command not found",
-                "The command you were looking for could not be found",
-            )
-        )
-    elif isinstance(error, commands.NotOwner):
-        # Basically completely silence it making people not know what happened
-        return
-    elif isinstance(error, commands.MissingPermissions):
-        missing_perms = ", ".join(error.missing_permissions).rstrip(",")
-        await ctx.send(
-            embed=create_premade_embed(
-                "Missing Permissions",
-                f"You are missing the following permissions: {missing_perms}",
+                "Guild Only", "This command cannot be used in private messages"
             )
         )
     elif isinstance(error, commands.MissingRequiredArgument):
@@ -59,5 +59,3 @@ async def send_error_embed(ctx: commands.Context, error: commands.CommandError) 
                 f"You are missing the following argument(s): {error.param.name}",
             )
         )
-    else:
-        await ctx.send(embed=produce_error_embed(error))

@@ -7,7 +7,8 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
-from libs.utils import GuildContext, is_manager
+from libs.utils import GuildContext
+from libs.utils.checks import bot_check_permissions, check_permissions
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -119,7 +120,8 @@ class Config(commands.Cog):
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
 
-    @is_manager()
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
     @commands.hybrid_group(name="config")
     async def config(self, ctx: GuildContext) -> None:
@@ -127,6 +129,7 @@ class Config(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
+    @commands.cooldown(1, 20, commands.BucketType.guild)
     @config.command(name="setup", usage="ticket_name: <str> log_name: <str>")
     async def setup(self, ctx: GuildContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
@@ -252,8 +255,8 @@ class Config(commands.Cog):
             return
 
         query = """
-        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url)
-        VALUES ($1, $2, $3, $4, $5, $6);
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix)
+        VALUES ($1, $2, $3, $4, $5, $6, $7);
         """
         try:
             await self.pool.execute(
@@ -264,6 +267,7 @@ class Config(commands.Cog):
                 logging_channel.id,
                 lgc_webhook.url,
                 tc_webhook.url,
+                [],
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
@@ -278,6 +282,7 @@ class Config(commands.Cog):
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
 
+    @commands.cooldown(1, 20, commands.BucketType.guild)
     @config.command(name="delete")
     async def delete(self, ctx: GuildContext) -> None:
         """Permanently deletes Rodhaj channels and tickets."""
