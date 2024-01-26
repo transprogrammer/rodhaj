@@ -10,11 +10,7 @@ from typing import Optional, TypeVar
 import asyncpg
 import click
 from libs.utils.config import RodhajConfig
-
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
+from typing_extensions import Self
 
 path = Path(__file__).parent / "config.yml"
 config = RodhajConfig(path)
