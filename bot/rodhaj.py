@@ -57,10 +57,10 @@ class Rodhaj(commands.Bot):
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
         self.version = str(VERSION)
-        self.transprogrammer_guild_id = config["rodhaj"].get(
+        self.transprogrammer_guild_id = config.rodhaj.get(
             "guild_id", 1183302385020436480
         )
-        self._dev_mode = config["rodhaj"].get("dev_mode", False)
+        self._dev_mode = config.rodhaj.get("dev_mode", False)
         self._reloader = Reloader(self, Path(__file__).parent)
 
     ### Ticket related utils

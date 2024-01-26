@@ -19,6 +19,10 @@ class RodhajConfig(Generic[_T]):
         except FileNotFoundError:
             self._config = {}
 
+    @property
+    def rodhaj(self) -> _T:
+        return self._config.get("rodhaj", {})
+
     @overload
     def get(self, key: Any) -> Optional[Union[_T, Any]]:
         ...
