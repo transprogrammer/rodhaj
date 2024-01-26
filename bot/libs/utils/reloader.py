@@ -14,12 +14,12 @@ if TYPE_CHECKING:
     from rodhaj import Rodhaj
 
 
-class DeepReloader:
+class Reloader:
     """An watchdog for reloading extensions and library files
 
-    This reloads/loads extensions and reloads/loads library files.
-    This will do an deep reload, meaning that it will reload
-    all occurrences of the imported module. Hence the name, DeepReloader
+    This reloads/unloads extensions, and also reloads library modules.
+    This does not implement a deep reload, as there is no way to do so
+    that way.
     """
 
     def __init__(self, bot: Rodhaj, path: Path):
@@ -52,7 +52,7 @@ class DeepReloader:
             await self.bot.load_extension(module)
             self.logger.info("Loaded extension: %s", module)
 
-    async def deep_reload_library(self, module: str) -> None:
+    async def reload_library(self, module: str) -> None:
         try:
             actual_module = sys.modules[module]
             importlib.reload(actual_module)
@@ -62,7 +62,7 @@ class DeepReloader:
 
     async def reload_extension_or_library(self, module: str) -> None:
         if module.startswith("libs"):
-            await self.deep_reload_library(module)
+            await self.reload_library(module)
         elif module.startswith("cogs"):
             await self.reload_or_load_extension(module)
 

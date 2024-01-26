@@ -19,7 +19,7 @@ from libs.utils import (
     RodhajHelp,
     send_error_embed,
 )
-from libs.utils.reloader import DeepReloader
+from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
@@ -60,7 +60,7 @@ class Rodhaj(commands.Bot):
         self.transprogrammer_guild_id = TRANSPROGRAMMER_GUILD_ID
         self.version = str(VERSION)
         self._dev_mode = dev_mode
-        self._reloader = DeepReloader(self, Path(__file__).parent)
+        self._reloader = Reloader(self, Path(__file__).parent)
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
@@ -205,7 +205,7 @@ class Rodhaj(commands.Bot):
         self.partial_config = await self.fetch_partial_config()
 
         if self._dev_mode:
-            self.logger.info("Dev mode is enabled. Loading DeepReloader")
+            self.logger.info("Dev mode is enabled. Loading Reloader")
             self._reloader.start()
 
     async def on_ready(self):
