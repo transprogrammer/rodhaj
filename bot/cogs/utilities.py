@@ -9,6 +9,8 @@ import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
 from libs.utils import Embed, RoboContext, human_timedelta, is_docker
+from pygit2.enums import SortMode
+
 from rodhaj import Rodhaj
 
 
@@ -46,9 +48,7 @@ class Utilities(commands.Cog):
     def get_last_commits(self, count: int = 5):
         repo = pygit2.Repository(".git")
         commits = list(
-            itertools.islice(
-                repo.walk(repo.head.target, pygit2.GIT_SORT_TOPOLOGICAL), count
-            )
+            itertools.islice(repo.walk(repo.head.target, SortMode.TOPOLOGICAL), count)
         )
         return "\n".join(self.format_commit(c) for c in commits)
 
