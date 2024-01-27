@@ -1,9 +1,27 @@
-# Rodhaj's config file
+# --------------------------------- #
+#    Rodhaj's Configuration file    #
+# --------------------------------- #
+# This holds the configuration for Rodhaj. This file is not settable during runtime.
+# If you wish to change the values, change and save, and restart your bot
 
 # Entries pertaining to Rodhaj are located here
 rodhaj:
+
+  # The token that Rodhaj will use.
+  # Ensure that this is kept secret, as these are just like the password to your bot.
   token: ""
+
+  # The Guild ID that is associated with Rodhaj. This will be the guild that Rodhaj
+  # will operate in, and will be the guild that Rodhaj will use to associate tickets and co.
   guild_id: 12345
 
-# The URI to connect to the PostgreSQL database
+  # The dev mode for Rodhaj. This will enable certain features
+  # such as an extension and library hot reloader in order to
+  # make development easier
+  # Note: Set this to false or remove this entry when running Rodhaj in production
+  dev_mode: False
+
+# The PostgreSQL connection URI that is used to connect to the database
+# The URI must be valid, and components will need to be quoted.
+# See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 postgres_uri: "postgresql://user:password@localhost:5432/user"
