@@ -19,12 +19,11 @@ from libs.utils import (
     RodhajHelp,
     send_error_embed,
 )
+from libs.utils.config import RodhajConfig
 from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
-
-TRANSPROGRAMMER_GUILD_ID = 1183302385020436480
 
 
 class Rodhaj(commands.Bot):
@@ -32,10 +31,10 @@ class Rodhaj(commands.Bot):
 
     def __init__(
         self,
+        config: RodhajConfig,
         intents: discord.Intents,
         session: ClientSession,
         pool: asyncpg.Pool,
-        dev_mode: bool = False,
         *args,
         **kwargs,
     ):
@@ -57,9 +56,11 @@ class Rodhaj(commands.Bot):
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
-        self.transprogrammer_guild_id = TRANSPROGRAMMER_GUILD_ID
         self.version = str(VERSION)
-        self._dev_mode = dev_mode
+        self.transprogrammer_guild_id = config.rodhaj.get(
+            "guild_id", 1183302385020436480
+        )
+        self._dev_mode = config.rodhaj.get("dev_mode", False)
         self._reloader = Reloader(self, Path(__file__).parent)
 
     ### Ticket related utils

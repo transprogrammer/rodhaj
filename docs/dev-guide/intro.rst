@@ -53,11 +53,11 @@ Setup
     poetry install \
     && poetry run pre-commit install
 
-3. Copy over the ``.env`` template over to the ``bot`` directory. Modify the values as appropriate.
+3. Copy over the ``config-example.yml`` template over to the ``bot`` directory. Modify the values as appropriate.
 
 .. code-block:: bash
 
-    cp envs/dev.env bot/.env
+    cp config-example.yml bot/config.yml
 
 4. Run the SQL migrations
 
@@ -91,7 +91,15 @@ Using Docker
 ^^^^^^^^^^^^
 
 If you decide to use Docker to run the local PostgreSQL server, then a
-pre-built Docker Compose file is provided. Simply run the following:
+pre-built Docker Compose file is provided. Setup instructions are as follows:
+
+1. Copy ``envs/docker.env`` to ``docker-compose.env`` within the root of the repo. Modify as appropriate.
+
+.. code-block:: bash
+
+    cp envs/docker.env docker-compose.env
+
+2. Run the following command to start the PostgreSQL server
 
 .. code-block:: bash
 

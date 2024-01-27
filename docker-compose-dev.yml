@@ -3,9 +3,12 @@ name: "rodhaj-dev"
 services:
   postgres:
     container_name: Rodhaj-Postgres
-    image: postgres:15 
+    image: rodhaj-pg:dev-latest
+    build:
+      context: ./docker/pg
+      dockerfile: Dockerfile
     env_file:
-      - bot/.env
+      - docker-compose.env
     volumes:
       - postgres_volume:/var/lib/postgresql/data
     ports:
