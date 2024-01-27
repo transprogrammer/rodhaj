@@ -133,7 +133,6 @@ venv.bak/
 docker-compose.env
 
 # Rodhaj configurations
-config.json
 config.yml
 config.yaml
 
