@@ -129,6 +129,13 @@ ENV/
 env.bak/
 venv.bak/
 
+# Docker Compose ENV
+docker-compose.env
+
+# Rodhaj configurations
+config.yml
+config.yaml
+
 # Spyder project settings
 .spyderproject
 .spyproject

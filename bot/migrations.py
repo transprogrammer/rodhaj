@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import os
 import re
 import traceback
 from functools import wraps
@@ -10,15 +9,16 @@ from typing import Optional, TypeVar
 
 import asyncpg
 import click
-from dotenv import load_dotenv
+from libs.utils.config import RodhajConfig
 from typing_extensions import Self
 
-load_dotenv()
+path = Path(__file__).parent / "config.yml"
+config = RodhajConfig(path)
 
 BE = TypeVar("BE", bound=BaseException)
 
 REVISION_FILE = re.compile(r"(?P<kind>V)(?P<version>[0-9]+)__(?P<description>.+).sql")
-POSTGRES_URI = os.environ["POSTGRES_URI"]
+POSTGRES_URI = config["postgres_uri"]
 
 CREATE_MIGRATIONS_TABLE = """
 CREATE TABLE IF NOT EXISTS migrations (
