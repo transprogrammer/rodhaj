@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import asyncpg
 import discord
 import msgspec
 from async_lru import alru_cache
+from discord import app_commands
 from discord.ext import commands
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
+from libs.utils.embeds import Embed
+from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -94,6 +97,16 @@ class SetupFlags(commands.FlagConverter):
         default="rodhaj-logs",
         description="The name of the logging channel. Defaults to rodhaj-logs",
     )
+
+
+class PrefixConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str):
+        user_id = ctx.bot.user.id
+        if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
+            raise commands.BadArgument("That is a reserved prefix already in use.")
+        if len(argument) > 100:
+            raise commands.BadArgument("That prefix is too long.")
+        return argument
 
 
 class Config(commands.Cog):
@@ -333,6 +346,102 @@ class Config(commands.Cog):
             await ctx.send("Not removing Rodhaj channels. Canceling.")
         else:
             await ctx.send("Cancelling.")
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.group(name="prefix", fallback="info")
+    async def prefix(self, ctx: GuildContext) -> None:
+        """Manages custom prefixes for the guild.
+
+        Passing in no subcommands will effectively show the currently set prefixes.
+        """
+        user_id = self.bot.user.id  # type: ignore
+        prefixes = await get_prefix(self.bot, ctx.message)
+        cleaned = ", ".join(
+            f"`{prefix}`" for prefix in prefixes if str(user_id) not in prefix
+        )
+        embed = Embed()
+        embed.add_field(name="Prefixes", value=cleaned)
+        embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
+        await ctx.send(embed=embed)
+
+    @prefix.command(name="add")
+    @app_commands.describe(prefix="The new prefix to add")
+    async def prefix_add(
+        self, ctx: GuildContext, prefix: Annotated[str, PrefixConverter]
+    ) -> None:
+        """Adds an custom prefix"""
+        prefixes = await get_prefix(self.bot, ctx.message)
+        if isinstance(prefixes, list) and len(prefixes) > 12 or prefix in prefixes:
+            desc = (
+                "There was a validation issue. "
+                "This is caused by these reasons: \n"
+                "- You have more than 12 prefixes for your server\n"
+                "- Your prefix fails the validation rules\n"
+                "- The prefix you want to set already exists"
+            )
+            await ctx.send(desc)
+            return
+
+        query = """
+            UPDATE guild_config
+            SET prefix = ARRAY_APPEND(prefix, $1)
+            WHERE id = $2;
+        """
+        await self.pool.execute(query, prefix, ctx.guild.id)
+        get_prefix.cache_invalidate(self.bot, ctx.message)
+        await ctx.send(f"Added prefix: `{prefix}`")
+
+    @prefix.command(name="edit")
+    @app_commands.describe(
+        old="The prefix to edit", new="A new prefix to replace the old"
+    )
+    @app_commands.rename(old="old_prefix", new="new_prefix")
+    async def prefix_edit(
+        self,
+        ctx: GuildContext,
+        old: Annotated[str, PrefixConverter],
+        new: Annotated[str, PrefixConverter],
+    ) -> None:
+        """Edits and replaces a prefix"""
+        query = """
+            UPDATE guild_config
+            SET prefix = ARRAY_REPLACE(prefix, $1, $2)
+            WHERE id = $3;
+        """
+        prefixes = await get_prefix(self.bot, ctx.message)
+
+        guild_id = ctx.guild.id
+        if old in prefixes:
+            await self.pool.execute(query, old, new, guild_id)
+            get_prefix.cache_invalidate(self.bot, ctx.message)
+            await ctx.send(f"Prefix updated to from `{old}` to `{new}`")
+        else:
+            await ctx.send("The prefix is not in the list of prefixes for your server")
+
+    @prefix.command(name="delete")
+    @app_commands.describe(prefix="The prefix to delete")
+    async def prefix_delete(
+        self, ctx: GuildContext, prefix: Annotated[str, PrefixConverter]
+    ) -> None:
+        """Deletes a set prefix"""
+        query = """
+        UPDATE guild_config
+        SET prefix = ARRAY_REMOVE(prefix, $1)
+        WHERE id=$2;
+        """
+        msg = f"Do you want to delete the following prefix: {prefix}"
+        confirm = await ctx.prompt(msg, timeout=120.0, delete_after=True)
+        if confirm:
+            await self.pool.execute(query, prefix, ctx.guild.id)
+            get_prefix.cache_invalidate(self.bot, ctx.message)
+            await ctx.send(f"The prefix `{prefix}` has been successfully deleted")
+            return
+        elif confirm is None:
+            await ctx.send("Confirmation timed out. Cancelled deletion...")
+            return
+        else:
+            await ctx.send("Confirmation cancelled. Please try again")
 
 
 async def setup(bot: Rodhaj) -> None:
