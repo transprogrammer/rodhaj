@@ -10,3 +10,4 @@ Rodhaj offers a developer guide so future developers can easily get started with
    intro
    contributing
    faq
+   migrating-to-yaml

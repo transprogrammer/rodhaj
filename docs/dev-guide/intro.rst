@@ -53,11 +53,11 @@ Setup
     poetry install \
     && poetry run pre-commit install
 
-3. Copy over the ``.env`` template over to the ``bot`` directory. Modify the values as appropriate.
+3. Copy over the ``config-example.yml`` template over to the ``bot`` directory. Modify the values as appropriate.
 
 .. code-block:: bash
 
-    cp envs/dev.env bot/.env
+    cp config-example.yml bot/config.yml
 
 4. Run the SQL migrations
 
