@@ -40,16 +40,12 @@ jobs:
       - name: Install Poetry Dependencies
         if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
-          poetry install
-
-      - name: Install Pyright and Ruff
-        run: |
-          pip install --upgrade pyright ruff
+          poetry install --with dev
           
       - name: Run Pyright
         run: |
-          pyright bot
+          poetry run pyright bot
 
       - name: Run Ruff
         run: |
-          ruff bot
+          poetry run ruff bot
