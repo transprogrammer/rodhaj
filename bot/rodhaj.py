@@ -20,6 +20,7 @@ from libs.utils import (
     send_error_embed,
 )
 from libs.utils.config import RodhajConfig
+from libs.utils.prefix import get_prefix
 from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
@@ -45,13 +46,14 @@ class Rodhaj(commands.Bot):
             allowed_mentions=discord.AllowedMentions(
                 everyone=False, replied_user=False
             ),
-            command_prefix=["r>", "?", "!"],
+            command_prefix=get_prefix,
             help_command=RodhajHelp(),
             intents=intents,
             tree_cls=RodhajCommandTree,
             *args,
             **kwargs,
         )
+        self.default_prefix = "r>"
         self.logger = logging.getLogger("rodhaj")
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
