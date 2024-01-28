@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Optional, Union
 
 import asyncpg
 import discord
@@ -132,6 +132,12 @@ class Config(commands.Cog):
             return None
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
+
+    def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
+        if isinstance(prefixes, str):
+            return f"`{prefixes}`"
+
+        return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -355,13 +361,9 @@ class Config(commands.Cog):
 
         Passing in no subcommands will effectively show the currently set prefixes.
         """
-        user_id = self.bot.user.id  # type: ignore
         prefixes = await get_prefix(self.bot, ctx.message)
-        cleaned = ", ".join(
-            f"`{prefix}`" for prefix in prefixes if str(user_id) not in prefix
-        )
         embed = Embed()
-        embed.add_field(name="Prefixes", value=cleaned)
+        embed.add_field(name="Prefixes", value=self.clean_prefixes(prefixes))
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
         await ctx.send(embed=embed)
 
