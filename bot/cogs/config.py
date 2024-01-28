@@ -357,13 +357,16 @@ class Config(commands.Cog):
     @commands.guild_only()
     @config.group(name="prefix", fallback="info")
     async def prefix(self, ctx: GuildContext) -> None:
-        """Manages custom prefixes for the guild.
+        """Shows and manages custom prefixes for the guild
 
         Passing in no subcommands will effectively show the currently set prefixes.
         """
         prefixes = await get_prefix(self.bot, ctx.message)
         embed = Embed()
-        embed.add_field(name="Prefixes", value=self.clean_prefixes(prefixes))
+        embed.add_field(
+            name="Prefixes", value=self.clean_prefixes(prefixes), inline=False
+        )
+        embed.add_field(name="Total", value=len(prefixes) - 2, inline=False)
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
         await ctx.send(embed=embed)
 
@@ -374,15 +377,15 @@ class Config(commands.Cog):
     ) -> None:
         """Adds an custom prefix"""
         prefixes = await get_prefix(self.bot, ctx.message)
-        if isinstance(prefixes, list) and len(prefixes) > 12 or prefix in prefixes:
-            desc = (
-                "There was a validation issue. "
-                "This is caused by these reasons: \n"
-                "- You have more than 12 prefixes for your server\n"
-                "- Your prefix fails the validation rules\n"
-                "- The prefix you want to set already exists"
+
+        # 2 are the mention prefixes, which are always prepended on the list of prefixes
+        if isinstance(prefixes, list) and len(prefixes) > 12:
+            await ctx.send(
+                "You can not have more than 10 custom prefixes for your server"
             )
-            await ctx.send(desc)
+            return
+        elif prefix in prefixes:
+            await ctx.send("The prefix you want to set already exists")
             return
 
         query = """
