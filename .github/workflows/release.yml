@@ -23,7 +23,7 @@ jobs:
     - name: Release New Version
       uses: ncipollo/release-action@v1
       with:
-        bodyFile: "changelog.md"
+        body: "https://github.com/transprogrammer/rodhaj/compare/${{ steps.tag_version.outputs.tag }}...${{ steps.tag_version.outputs.new_tag }}"
         token: ${{ secrets.PAT_TOKEN }}
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: ${{ steps.tag_version.outputs.new_tag }}
