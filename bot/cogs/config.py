@@ -441,10 +441,8 @@ class Config(commands.Cog):
             await self.pool.execute(query, prefix, ctx.guild.id)
             get_prefix.cache_invalidate(self.bot, ctx.message)
             await ctx.send(f"The prefix `{prefix}` has been successfully deleted")
-            return
         elif confirm is None:
             await ctx.send("Confirmation timed out. Cancelled deletion...")
-            return
         else:
             await ctx.send("Confirmation cancelled. Please try again")
 
