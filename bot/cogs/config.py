@@ -12,6 +12,7 @@ from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
 from libs.utils.prefix import get_prefix
+from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -445,6 +446,42 @@ class Config(commands.Cog):
             await ctx.send("Confirmation timed out. Cancelled deletion...")
         else:
             await ctx.send("Confirmation cancelled. Please try again")
+
+    # In order to prevent abuse, 4 checks must be performed:
+    # 1. Permissions check
+    # 2. Is the selected entity higher than the author's current hierarchy? (in terms of role and members)
+    # 3. Is the bot itself the entity getting blacklisted?
+    # 4. Is the author themselves trying to get blacklisted?
+    # This system must be addressed with care as it is extremely dangerous
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
+    @commands.hybrid_group(name="blacklist")
+    async def blacklist(self, ctx: GuildContext) -> None:
+        """Manages and views the current blacklist"""
+        raise NotImplementedError("blacklist still in the works")
+
+    @blacklist.command(name="add")
+    @app_commands.describe(
+        entity="The user or role to add to the blacklist",
+        until="The date or time that the user or role is removed from the blacklist",
+    )
+    async def blacklist_add(
+        self,
+        ctx: GuildContext,
+        entity: Union[discord.Member, discord.Role],
+        until: Annotated[
+            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
+        ],
+    ) -> None:
+        """Adds an user or role into the blacklist"""
+        raise NotImplementedError("Still add this lol")
+
+    @blacklist.command(name="remove")
+    @app_commands.describe(entity="The user or role to remove from the blacklist")
+    async def blacklist_remove(
+        self, ctx: GuildContext, entity: Union[discord.Member, discord.Role]
+    ) -> None:
+        raise NotImplementedError("make this lol")
 
 
 async def setup(bot: Rodhaj) -> None:
