@@ -23,6 +23,7 @@ jishaku = "^2.5.2"
 pyyaml = "^6.0.1"
 watchfiles = "^0.21.0"
 typing-extensions = "^4.9.0"
+parsedatetime = "^2.6"
 
 [tool.poetry.group.dev.dependencies]
 # These are pinned by major version
