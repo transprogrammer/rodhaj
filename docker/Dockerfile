@@ -10,10 +10,7 @@ RUN apt-get update \
   tini \
   bash \
   netcat-traditional \
-  libffi-dev \
   git \
-  gcc \
-  libc6-dev \
   && apt-get clean
 
 WORKDIR /rodhaj
