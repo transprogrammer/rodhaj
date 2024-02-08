@@ -31,11 +31,11 @@ parsedatetime = "^2.6"
 # https://python-poetry.org/docs/dependency-specification/
 pre-commit = "^3"
 pyright = "^1.1"
-ruff = "^0.1"
+ruff = "^0.2"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
-sphinx-autobuild = "^2021.3.14"
+sphinx-autobuild = "^2024.2.4"
 sphinx-copybutton = "^0.5.2"
 furo = "^2024.1.29"
 
