@@ -7,7 +7,8 @@
 CREATE TABLE IF NOT EXISTS blacklist (
     id SERIAL PRIMARY KEY,
     guild_id BIGINT,
-    entity_id BIGINT UNIQUE,
+    entity_id BIGINT,
+    UNIQUE (guild_id, entity_id)
 );
 
 CREATE INDEX IF NOT EXISTS blacklist_guild_id_idx ON blacklist (guild_id);
