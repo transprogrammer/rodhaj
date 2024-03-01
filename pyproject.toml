@@ -30,7 +30,7 @@ typing-extensions = "^4.10.0"
 # https://python-poetry.org/docs/dependency-specification/
 pre-commit = "^3"
 pyright = "^1.1"
-ruff = "^0.2"
+ruff = "^0.3"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
