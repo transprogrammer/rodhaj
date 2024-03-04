@@ -15,14 +15,14 @@ asyncpg = "^0.29.0"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
 psutil = "^5.9.8"
 pygit2 = "^1.14.1"
-python-dateutil = "^2.8.2"
+python-dateutil = "^2.9.0"
 click = "^8.1.7"
 async-lru = "^2.0.4"
 msgspec = "^0.18.6"
 jishaku = "^2.5.2"
 pyyaml = "^6.0.1"
 watchfiles = "^0.21.0"
-typing-extensions = "^4.9.0"
+typing-extensions = "^4.10.0"
 parsedatetime = "^2.6"
 
 [tool.poetry.group.dev.dependencies]
@@ -31,7 +31,7 @@ parsedatetime = "^2.6"
 # https://python-poetry.org/docs/dependency-specification/
 pre-commit = "^3"
 pyright = "^1.1"
-ruff = "^0.2"
+ruff = "^0.3"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
