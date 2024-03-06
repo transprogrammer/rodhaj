@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 # Later on if we needed global interaction checks, we can do it here
 class RodhajCommandTree(app_commands.CommandTree):
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
-        bot: Rodhaj = interaction.client
+        bot: Rodhaj = interaction.client  # type: ignore # Correct subclass type
         if interaction.user.id in bot.blocklist:
             await interaction.response.send_message(
                 "You have been blocked from using this bot", ephemeral=True
