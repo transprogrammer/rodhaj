@@ -13,6 +13,8 @@ from discord.utils import format_dt, utcnow
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
+from libs.utils.errors import create_premade_embed
+from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
 from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
@@ -25,11 +27,23 @@ UNKNOWN_ERROR_MESSAGE = (
 
 
 class BlocklistEntity(msgspec.Struct, frozen=True):
+    bot: Rodhaj
     guild_id: int
     entity_id: int
     expires: datetime.datetime
     created: datetime.datetime = utcnow()
     event: str = "on_blocklist_timer"
+
+    def format(self) -> str:
+        user = self.bot.get_user(self.entity_id)
+        name = user.global_name if user else "Unknown"
+        return f"{name} (ID: {self.entity_id} | Expires: {format_dt(self.expires)})"
+
+
+class BlocklistPages(SimplePages):
+    def __init__(self, entries: list[BlocklistEntity], *, ctx: GuildContext):
+        converted = [entry.format() for entry in entries]
+        super().__init__(converted, ctx=ctx)
 
 
 class Blocklist:
@@ -43,16 +57,15 @@ class Blocklist:
         FROM blocklist;
         """
         rows = await self.bot.pool.fetch(query)
-        return {row["entity_id"]: BlocklistEntity(**dict(row)) for row in rows}
+        return {
+            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
+        }
 
     async def load(self):
         try:
             self._blocklist = await self._load()
         except Exception:
             self._blocklist = {}
-
-    async def reload(self):
-        self._blocklist = await self._load()
 
     @overload
     def get(self, key: int) -> Optional[BlocklistEntity]: ...
@@ -539,7 +552,9 @@ class Config(commands.Cog):
     @config.group(name="blocklist", fallback="info")
     async def blocklist(self, ctx: GuildContext) -> None:
         """Manages and views the current blocklist"""
-        await ctx.send(f"{self.bot.blocklist.all()}")
+        blocklist = self.bot.blocklist.all()
+        pages = BlocklistPages([entry for entry in blocklist.values()], ctx=ctx)
+        await pages.start()
 
     @blocklist.command(name="add")
     @app_commands.describe(
@@ -568,13 +583,17 @@ class Config(commands.Cog):
         await self.remove_from_blocklist(ctx.guild.id, entity.id)
         await ctx.send(f"{entity.mention} has been unblocked")
 
-    # TODO: Fix this
     @blocklist_add.error
     async def on_blocklist_add_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
         if isinstance(error, commands.BadArgument):
-            await ctx.send(str(error))
+            await ctx.send(
+                embed=create_premade_embed(
+                    "Invalid Argument",
+                    str(error),
+                )
+            )
 
 
 async def setup(bot: Rodhaj) -> None:

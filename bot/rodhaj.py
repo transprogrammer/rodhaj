@@ -89,7 +89,6 @@ class Rodhaj(commands.Bot):
         self, ctx: commands.Context, error: commands.CommandError
     ) -> None:
         await send_error_embed(ctx, error)
-        self.logger.exception("Error: %s", error)
 
     ### Ticket processing and handling
 
