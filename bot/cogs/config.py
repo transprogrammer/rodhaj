@@ -173,13 +173,25 @@ class SetupFlags(commands.FlagConverter):
 
 
 class PrefixConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str):
-        user_id = ctx.bot.user.id
+    async def convert(self, ctx: GuildContext, argument: str):
+        user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
         if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
             raise commands.BadArgument("That is a reserved prefix already in use.")
         if len(argument) > 100:
             raise commands.BadArgument("That prefix is too long.")
         return argument
+
+
+class EntityConverter(commands.MemberConverter):
+    async def convert(self, ctx: GuildContext, argument: str) -> discord.Member:
+        member = await super().convert(ctx, argument)
+        # TODO: Implement hierarchy checks here
+        if member.id == ctx.author.id:
+            raise commands.BadArgument("You can't block yourself")
+        if ctx.bot.user and member.id == ctx.bot.user.id:
+            raise commands.BadArgument("You can't block the bot")
+
+        return member
 
 
 class Config(commands.Cog):
@@ -233,6 +245,17 @@ class Config(commands.Cog):
         """
         await self.bot.pool.execute(query, guild_id, id)
         await self.bot.blocklist.load()
+
+    async def blocklist_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(
+                embed=create_premade_embed(
+                    "Invalid Argument",
+                    str(error),
+                )
+            )
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -564,7 +587,7 @@ class Config(commands.Cog):
     async def blocklist_add(
         self,
         ctx: GuildContext,
-        entity: discord.Member,
+        entity: Annotated[discord.Member, EntityConverter],
         *,
         until: Annotated[
             FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
@@ -577,7 +600,9 @@ class Config(commands.Cog):
 
     @blocklist.command(name="remove")
     @app_commands.describe(entity="The user or role to remove from the blocklist")
-    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
+    async def blocklist_remove(
+        self, ctx: GuildContext, entity: Annotated[discord.Member, EntityConverter]
+    ) -> None:
         """Removes an user or role from the blocklist"""
         # TODO: Check if the command executed at < expiration date
         await self.remove_from_blocklist(ctx.guild.id, entity.id)
@@ -587,13 +612,13 @@ class Config(commands.Cog):
     async def on_blocklist_add_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(
-                embed=create_premade_embed(
-                    "Invalid Time",
-                    str(error),
-                )
-            )
+        await self.blocklist_error(ctx, error)
+
+    @blocklist_remove.error
+    async def on_blocklist_remove_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        await self.blocklist_error(ctx, error)
 
 
 async def setup(bot: Rodhaj) -> None:
