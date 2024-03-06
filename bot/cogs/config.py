@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Optional, Union
+import datetime
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, overload
 
 import asyncpg
 import discord
@@ -8,6 +9,7 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands
+from discord.utils import format_dt, utcnow
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
@@ -22,6 +24,64 @@ UNKNOWN_ERROR_MESSAGE = (
 )
 
 
+class BlocklistEntity(msgspec.Struct, frozen=True):
+    guild_id: int
+    entity_id: int
+    expires: datetime.datetime
+    created: datetime.datetime = utcnow()
+    event: str = "on_blocklist_timer"
+
+
+class Blocklist:
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self._blocklist: dict[int, BlocklistEntity] = {}
+
+    async def _load(self):
+        query = """
+        SELECT guild_id, entity_id, expires, created
+        FROM blocklist;
+        """
+        rows = await self.bot.pool.fetch(query)
+        return {row["entity_id"]: BlocklistEntity(**dict(row)) for row in rows}
+
+    async def load(self):
+        try:
+            self._blocklist = await self._load()
+        except Exception:
+            self._blocklist = {}
+
+    async def reload(self):
+        self._blocklist = await self._load()
+
+    @overload
+    def get(self, key: int) -> Optional[BlocklistEntity]: ...
+
+    @overload
+    def get(self, key: int) -> BlocklistEntity: ...
+
+    def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
+        return self._blocklist.get(key, default)
+
+    def pop(self, key: int) -> BlocklistEntity:
+        return self._blocklist.pop(key)
+
+    def put(self, key: int, value: BlocklistEntity) -> None:
+        self._blocklist[key] = value
+
+    def __contains__(self, item: int) -> bool:
+        return item in self._blocklist
+
+    def __getitem__(self, item: int) -> BlocklistEntity:
+        return self._blocklist[item]
+
+    def __len__(self) -> int:
+        return len(self._blocklist)
+
+    def all(self) -> dict[int, BlocklistEntity]:
+        return self._blocklist
+
+
 # Msgspec Structs are usually extremely fast compared to slotted classes
 class GuildConfig(msgspec.Struct):
     bot: Rodhaj
@@ -31,7 +91,6 @@ class GuildConfig(msgspec.Struct):
     logging_channel_id: int
     logging_broadcast_url: str
     ticket_broadcast_url: str
-    locked: bool = False
 
     @property
     def category_channel(self) -> Optional[discord.CategoryChannel]:
@@ -75,7 +134,7 @@ class GuildWebhookDispatcher:
     @alru_cache()
     async def get_config(self) -> Optional[GuildConfig]:
         query = """
-        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, locked
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url
         FROM guild_config
         WHERE id = $1;
         """
@@ -139,6 +198,28 @@ class Config(commands.Cog):
             return f"`{prefixes}`"
 
         return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+
+    ### Blocklist Utilities
+
+    async def add_to_blocklist(
+        self, guild_id: int, id: int, expires: datetime.datetime
+    ) -> None:
+        query = """
+        INSERT INTO blocklist (guild_id, entity_id, expires, event)
+        VALUES ($1, $2, $3, $4);
+        """
+        # Strip out timezone as the db doesn't need it
+        expires = expires.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        await self.bot.pool.execute(query, guild_id, id, expires, "on_blocklist_timer")
+        await self.bot.blocklist.load()
+
+    async def remove_from_blocklist(self, guild_id: int, id: int) -> None:
+        query = """
+        DELETE FROM blocklist
+        WHERE guild_id = $1 AND entity_id = $2;
+        """
+        await self.bot.pool.execute(query, guild_id, id)
+        await self.bot.blocklist.load()
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -450,38 +531,50 @@ class Config(commands.Cog):
     # In order to prevent abuse, 4 checks must be performed:
     # 1. Permissions check
     # 2. Is the selected entity higher than the author's current hierarchy? (in terms of role and members)
-    # 3. Is the bot itself the entity getting blacklisted?
-    # 4. Is the author themselves trying to get blacklisted?
+    # 3. Is the bot itself the entity getting blocklisted?
+    # 4. Is the author themselves trying to get blocklisted?
     # This system must be addressed with care as it is extremely dangerous
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @commands.guild_only()
-    @commands.hybrid_group(name="blacklist")
-    async def blacklist(self, ctx: GuildContext) -> None:
-        """Manages and views the current blacklist"""
-        raise NotImplementedError("blacklist still in the works")
+    @config.group(name="blocklist", fallback="info")
+    async def blocklist(self, ctx: GuildContext) -> None:
+        """Manages and views the current blocklist"""
+        await ctx.send(f"{self.bot.blocklist.all()}")
 
-    @blacklist.command(name="add")
+    @blocklist.command(name="add")
     @app_commands.describe(
-        entity="The user or role to add to the blacklist",
-        until="The date or time that the user or role is removed from the blacklist",
+        entity="The user or role to add to the blocklist",
+        until="The date or time that the user or role is removed from the blocklist",
     )
-    async def blacklist_add(
+    async def blocklist_add(
         self,
         ctx: GuildContext,
-        entity: Union[discord.Member, discord.Role],
+        entity: discord.Member,
+        *,
         until: Annotated[
             FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
         ],
     ) -> None:
-        """Adds an user or role into the blacklist"""
-        raise NotImplementedError("Still add this lol")
+        """Adds an user or role into the blocklist"""
+        # TODO: Remove any active tickets
+        await self.add_to_blocklist(ctx.guild.id, entity.id, until.dt)
+        await ctx.send(f"{entity.mention} has been blocked until {format_dt(until.dt)}")
 
-    @blacklist.command(name="remove")
-    @app_commands.describe(entity="The user or role to remove from the blacklist")
-    async def blacklist_remove(
-        self, ctx: GuildContext, entity: Union[discord.Member, discord.Role]
+    @blocklist.command(name="remove")
+    @app_commands.describe(entity="The user or role to remove from the blocklist")
+    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
+        """Removes an user or role from the blocklist"""
+        # TODO: Check if the command executed at < expiration date
+        await self.remove_from_blocklist(ctx.guild.id, entity.id)
+        await ctx.send(f"{entity.mention} has been unblocked")
+
+    # TODO: Fix this
+    @blocklist_add.error
+    async def on_blocklist_add_error(
+        self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        raise NotImplementedError("make this lol")
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
 
 async def setup(bot: Rodhaj) -> None:
