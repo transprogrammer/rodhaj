@@ -590,7 +590,7 @@ class Config(commands.Cog):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
                 embed=create_premade_embed(
-                    "Invalid Argument",
+                    "Invalid Time",
                     str(error),
                 )
             )
