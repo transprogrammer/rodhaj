@@ -13,7 +13,6 @@ from discord.utils import format_dt, utcnow
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
-from libs.utils.errors import create_premade_embed
 from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
 from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
@@ -182,18 +181,6 @@ class PrefixConverter(commands.Converter):
         return argument
 
 
-class EntityConverter(commands.MemberConverter):
-    async def convert(self, ctx: GuildContext, argument: str) -> discord.Member:
-        member = await super().convert(ctx, argument)
-        # TODO: Implement hierarchy checks here
-        if member.id == ctx.author.id:
-            raise commands.BadArgument("You can't block yourself")
-        if ctx.bot.user and member.id == ctx.bot.user.id:
-            raise commands.BadArgument("You can't block the bot")
-
-        return member
-
-
 class Config(commands.Cog):
     """Config and setup commands for Rodhaj"""
 
@@ -246,16 +233,18 @@ class Config(commands.Cog):
         await self.bot.pool.execute(query, guild_id, id)
         await self.bot.blocklist.load()
 
-    async def blocklist_error(
-        self, ctx: GuildContext, error: commands.CommandError
-    ) -> None:
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(
-                embed=create_premade_embed(
-                    "Invalid Argument",
-                    str(error),
-                )
-            )
+    async def can_block(self, ctx: GuildContext, entity: discord.Member) -> bool:
+        if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
+            return False
+
+        # Hierarchy check
+        if (
+            isinstance(ctx.author, discord.Member)
+            and entity.top_role > ctx.author.top_role
+        ):
+            return False
+
+        return True
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -570,7 +559,7 @@ class Config(commands.Cog):
     # 3. Is the bot itself the entity getting blocklisted?
     # 4. Is the author themselves trying to get blocklisted?
     # This system must be addressed with care as it is extremely dangerous
-    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    # @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @commands.guild_only()
     @config.group(name="blocklist", fallback="info")
     async def blocklist(self, ctx: GuildContext) -> None:
@@ -587,7 +576,7 @@ class Config(commands.Cog):
     async def blocklist_add(
         self,
         ctx: GuildContext,
-        entity: Annotated[discord.Member, EntityConverter],
+        entity: discord.Member,
         *,
         until: Annotated[
             FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
@@ -595,30 +584,29 @@ class Config(commands.Cog):
     ) -> None:
         """Adds an user or role into the blocklist"""
         # TODO: Remove any active tickets
+        if not await self.can_block(ctx, entity):
+            await ctx.send("Failed to block entity")
+            return
         await self.add_to_blocklist(ctx.guild.id, entity.id, until.dt)
         await ctx.send(f"{entity.mention} has been blocked until {format_dt(until.dt)}")
 
     @blocklist.command(name="remove")
     @app_commands.describe(entity="The user or role to remove from the blocklist")
-    async def blocklist_remove(
-        self, ctx: GuildContext, entity: Annotated[discord.Member, EntityConverter]
-    ) -> None:
+    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
         """Removes an user or role from the blocklist"""
         # TODO: Check if the command executed at < expiration date
-        await self.remove_from_blocklist(ctx.guild.id, entity.id)
+        if not await self.can_block(ctx, entity):
+            await ctx.send("Failed to unblock entity")
+            return
+
+        query = """
+        DELETE FROM blocklist
+        WHERE guild_id = $1 AND entity_id = $2 AND $3 < expires;
+        """
+        now = utcnow().astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        await self.bot.pool.execute(query, ctx.guild.id, entity.id, now)
+        await self.bot.blocklist.load()
         await ctx.send(f"{entity.mention} has been unblocked")
-
-    @blocklist_add.error
-    async def on_blocklist_add_error(
-        self, ctx: GuildContext, error: commands.CommandError
-    ) -> None:
-        await self.blocklist_error(ctx, error)
-
-    @blocklist_remove.error
-    async def on_blocklist_remove_error(
-        self, ctx: GuildContext, error: commands.CommandError
-    ) -> None:
-        await self.blocklist_error(ctx, error)
 
 
 async def setup(bot: Rodhaj) -> None:
