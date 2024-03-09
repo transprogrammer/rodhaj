@@ -559,7 +559,7 @@ class Config(commands.Cog):
     # 3. Is the bot itself the entity getting blocklisted?
     # 4. Is the author themselves trying to get blocklisted?
     # This system must be addressed with care as it is extremely dangerous
-    # @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @commands.guild_only()
     @config.group(name="blocklist", fallback="info")
     async def blocklist(self, ctx: GuildContext) -> None:
@@ -583,7 +583,6 @@ class Config(commands.Cog):
         ],
     ) -> None:
         """Adds an user or role into the blocklist"""
-        # TODO: Remove any active tickets
         if not await self.can_block(ctx, entity):
             await ctx.send("Failed to block entity")
             return
@@ -594,16 +593,19 @@ class Config(commands.Cog):
     @app_commands.describe(entity="The user or role to remove from the blocklist")
     async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
         """Removes an user or role from the blocklist"""
-        # TODO: Check if the command executed at < expiration date
         if not await self.can_block(ctx, entity):
             await ctx.send("Failed to unblock entity")
             return
 
+        author_entity = self.bot.blocklist.get(ctx.author.id)
+        now = utcnow().astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        if author_entity and now > author_entity.expires:
+            await ctx.send("The entity is already unblocked")
+            return
         query = """
-        DELETE FROM blocklist
+        DELETE FROM blocklist. 
         WHERE guild_id = $1 AND entity_id = $2 AND $3 < expires;
         """
-        now = utcnow().astimezone(datetime.timezone.utc).replace(tzinfo=None)
         await self.bot.pool.execute(query, ctx.guild.id, entity.id, now)
         await self.bot.blocklist.load()
         await ctx.send(f"{entity.mention} has been unblocked")
