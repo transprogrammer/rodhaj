@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Optional, Union
+import datetime
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, overload
 
 import asyncpg
 import discord
@@ -8,10 +9,13 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands
+from discord.utils import format_dt, utcnow
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
+from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
+from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -19,6 +23,69 @@ if TYPE_CHECKING:
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
+
+
+class BlocklistEntity(msgspec.Struct, frozen=True):
+    bot: Rodhaj
+    guild_id: int
+    entity_id: int
+    expires: datetime.datetime
+    created: datetime.datetime = utcnow()
+    event: str = "on_blocklist_timer"
+
+    def format(self) -> str:
+        user = self.bot.get_user(self.entity_id)
+        name = user.global_name if user else "Unknown"
+        return f"{name} (ID: {self.entity_id} | Expires: {format_dt(self.expires)})"
+
+
+class BlocklistPages(SimplePages):
+    def __init__(self, entries: list[BlocklistEntity], *, ctx: GuildContext):
+        converted = [entry.format() for entry in entries]
+        super().__init__(converted, ctx=ctx)
+
+
+class Blocklist:
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self._blocklist: dict[int, BlocklistEntity] = {}
+
+    async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
+        query = """
+        SELECT guild_id, entity_id, expires, created
+        FROM blocklist;
+        """
+        rows = await connection.fetch(query)
+        return {
+            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
+        }
+
+    async def load(self, connection: Optional[asyncpg.Connection] = None):
+        try:
+            self._blocklist = await self._load(connection or self.bot.pool)
+        except Exception:
+            self._blocklist = {}
+
+    @overload
+    def get(self, key: int) -> Optional[BlocklistEntity]: ...
+
+    @overload
+    def get(self, key: int) -> BlocklistEntity: ...
+
+    def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
+        return self._blocklist.get(key, default)
+
+    def __contains__(self, item: int) -> bool:
+        return item in self._blocklist
+
+    def __getitem__(self, item: int) -> BlocklistEntity:
+        return self._blocklist[item]
+
+    def __len__(self) -> int:
+        return len(self._blocklist)
+
+    def all(self) -> dict[int, BlocklistEntity]:
+        return self._blocklist
 
 
 # Msgspec Structs are usually extremely fast compared to slotted classes
@@ -30,7 +97,6 @@ class GuildConfig(msgspec.Struct):
     logging_channel_id: int
     logging_broadcast_url: str
     ticket_broadcast_url: str
-    locked: bool = False
 
     @property
     def category_channel(self) -> Optional[discord.CategoryChannel]:
@@ -74,7 +140,7 @@ class GuildWebhookDispatcher:
     @alru_cache()
     async def get_config(self) -> Optional[GuildConfig]:
         query = """
-        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, locked
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url
         FROM guild_config
         WHERE id = $1;
         """
@@ -100,8 +166,8 @@ class SetupFlags(commands.FlagConverter):
 
 
 class PrefixConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str):
-        user_id = ctx.bot.user.id
+    async def convert(self, ctx: GuildContext, argument: str):
+        user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
         if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
             raise commands.BadArgument("That is a reserved prefix already in use.")
         if len(argument) > 100:
@@ -138,6 +204,21 @@ class Config(commands.Cog):
             return f"`{prefixes}`"
 
         return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+
+    ### Blocklist Utilities
+
+    async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
+        if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
+            return False
+
+        # Hierarchy check
+        if (
+            isinstance(ctx.author, discord.Member)
+            and entity.top_role > ctx.author.top_role
+        ):
+            return False
+
+        return True
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -445,6 +526,94 @@ class Config(commands.Cog):
             await ctx.send("Confirmation timed out. Cancelled deletion...")
         else:
             await ctx.send("Confirmation cancelled. Please try again")
+
+    # In order to prevent abuse, 4 checks must be performed:
+    # 1. Permissions check
+    # 2. Is the selected entity higher than the author's current hierarchy? (in terms of role and members)
+    # 3. Is the bot itself the entity getting blocklisted?
+    # 4. Is the author themselves trying to get blocklisted?
+    # This system must be addressed with care as it is extremely dangerous
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
+    @config.group(name="blocklist", fallback="info")
+    async def blocklist(self, ctx: GuildContext) -> None:
+        """Manages and views the current blocklist"""
+        blocklist = self.bot.blocklist.all()
+        pages = BlocklistPages([entry for entry in blocklist.values()], ctx=ctx)
+        await pages.start()
+
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @blocklist.command(name="add")
+    @app_commands.describe(
+        entity="The member to add to the blocklist",
+        until="The date or time that the member is removed from the blocklist",
+    )
+    async def blocklist_add(
+        self,
+        ctx: GuildContext,
+        entity: discord.Member,
+        *,
+        until: Annotated[
+            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
+        ],
+    ) -> None:
+        """Adds an member into the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
+            await ctx.send("Failed to block entity")
+            return
+
+        query = """
+        INSERT INTO blocklist (guild_id, entity_id, expires, event)
+        VALUES ($1, $2, $3, $4);
+        """
+        # Strip out timezone as the db doesn't need it
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                expires = until.dt.astimezone(datetime.timezone.utc).replace(
+                    tzinfo=None
+                )
+                await connection.execute(
+                    query, ctx.guild.id, entity.id, expires, "on_blocklist_timer"
+                )
+            except asyncpg.UniqueViolationError:
+                await tr.rollback()
+                await ctx.send("This user is already on the blocklist")
+            except Exception:
+                await tr.rollback()
+                await ctx.send(f"Unable to block {entity.global_name}")
+            else:
+                await tr.commit()
+                await self.bot.blocklist.load(connection)
+                await ctx.send(
+                    f"{entity.mention} has been blocked until {format_dt(until.dt)}"
+                )
+
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @blocklist.command(name="remove")
+    @app_commands.describe(entity="The member to remove from the blocklist")
+    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
+        """Removes an member from the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
+            await ctx.send("Failed to unblock entity")
+            return
+
+        author_entity = self.bot.blocklist.get(ctx.author.id)
+        now = utcnow().astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        if author_entity and now > author_entity.expires:
+            await ctx.send("The entity is already unblocked")
+            return
+
+        query = """
+        DELETE FROM blocklist. 
+        WHERE guild_id = $1 AND entity_id = $2 AND $3 < expires;
+        """
+        # Probably better to bundle them up in one connection rather than pulling from two connections
+        async with self.bot.pool.acquire() as connection:
+            await connection.execute(query, ctx.guild.id, entity.id, now)
+            await self.bot.blocklist.load(connection)
+            await ctx.send(f"{entity.mention} has been unblocked")
 
 
 async def setup(bot: Rodhaj) -> None:
