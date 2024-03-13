@@ -50,19 +50,19 @@ class Blocklist:
         self.bot = bot
         self._blocklist: dict[int, BlocklistEntity] = {}
 
-    async def _load(self):
+    async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
         query = """
         SELECT guild_id, entity_id, expires, created
         FROM blocklist;
         """
-        rows = await self.bot.pool.fetch(query)
+        rows = await connection.fetch(query)
         return {
             row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
         }
 
-    async def load(self):
+    async def load(self, connection: Optional[asyncpg.Connection] = None):
         try:
-            self._blocklist = await self._load()
+            self._blocklist = await self._load(connection or self.bot.pool)
         except Exception:
             self._blocklist = {}
 
@@ -74,12 +74,6 @@ class Blocklist:
 
     def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
         return self._blocklist.get(key, default)
-
-    def pop(self, key: int) -> BlocklistEntity:
-        return self._blocklist.pop(key)
-
-    def put(self, key: int, value: BlocklistEntity) -> None:
-        self._blocklist[key] = value
 
     def __contains__(self, item: int) -> bool:
         return item in self._blocklist
@@ -213,27 +207,7 @@ class Config(commands.Cog):
 
     ### Blocklist Utilities
 
-    async def add_to_blocklist(
-        self, guild_id: int, id: int, expires: datetime.datetime
-    ) -> None:
-        query = """
-        INSERT INTO blocklist (guild_id, entity_id, expires, event)
-        VALUES ($1, $2, $3, $4);
-        """
-        # Strip out timezone as the db doesn't need it
-        expires = expires.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        await self.bot.pool.execute(query, guild_id, id, expires, "on_blocklist_timer")
-        await self.bot.blocklist.load()
-
-    async def remove_from_blocklist(self, guild_id: int, id: int) -> None:
-        query = """
-        DELETE FROM blocklist
-        WHERE guild_id = $1 AND entity_id = $2;
-        """
-        await self.bot.pool.execute(query, guild_id, id)
-        await self.bot.blocklist.load()
-
-    async def can_block(self, ctx: GuildContext, entity: discord.Member) -> bool:
+    async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
         if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
             return False
 
@@ -568,10 +542,11 @@ class Config(commands.Cog):
         pages = BlocklistPages([entry for entry in blocklist.values()], ctx=ctx)
         await pages.start()
 
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @blocklist.command(name="add")
     @app_commands.describe(
-        entity="The user or role to add to the blocklist",
-        until="The date or time that the user or role is removed from the blocklist",
+        entity="The member to add to the blocklist",
+        until="The date or time that the member is removed from the blocklist",
     )
     async def blocklist_add(
         self,
@@ -582,18 +557,45 @@ class Config(commands.Cog):
             FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
         ],
     ) -> None:
-        """Adds an user or role into the blocklist"""
-        if not await self.can_block(ctx, entity):
+        """Adds an member into the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
             await ctx.send("Failed to block entity")
             return
-        await self.add_to_blocklist(ctx.guild.id, entity.id, until.dt)
-        await ctx.send(f"{entity.mention} has been blocked until {format_dt(until.dt)}")
 
+        query = """
+        INSERT INTO blocklist (guild_id, entity_id, expires, event)
+        VALUES ($1, $2, $3, $4);
+        """
+        # Strip out timezone as the db doesn't need it
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                expires = until.dt.astimezone(datetime.timezone.utc).replace(
+                    tzinfo=None
+                )
+                await connection.execute(
+                    query, ctx.guild.id, entity.id, expires, "on_blocklist_timer"
+                )
+            except asyncpg.UniqueViolationError:
+                await tr.rollback()
+                await ctx.send("This user is already on the blocklist")
+            except Exception:
+                await tr.rollback()
+                await ctx.send(f"Unable to block {entity.global_name}")
+            else:
+                await tr.commit()
+                await self.bot.blocklist.load(connection)
+                await ctx.send(
+                    f"{entity.mention} has been blocked until {format_dt(until.dt)}"
+                )
+
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @blocklist.command(name="remove")
-    @app_commands.describe(entity="The user or role to remove from the blocklist")
+    @app_commands.describe(entity="The member to remove from the blocklist")
     async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
-        """Removes an user or role from the blocklist"""
-        if not await self.can_block(ctx, entity):
+        """Removes an member from the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
             await ctx.send("Failed to unblock entity")
             return
 
@@ -602,13 +604,16 @@ class Config(commands.Cog):
         if author_entity and now > author_entity.expires:
             await ctx.send("The entity is already unblocked")
             return
+
         query = """
         DELETE FROM blocklist. 
         WHERE guild_id = $1 AND entity_id = $2 AND $3 < expires;
         """
-        await self.bot.pool.execute(query, ctx.guild.id, entity.id, now)
-        await self.bot.blocklist.load()
-        await ctx.send(f"{entity.mention} has been unblocked")
+        # Probably better to bundle them up in one connection rather than pulling from two connections
+        async with self.bot.pool.acquire() as connection:
+            await connection.execute(query, ctx.guild.id, entity.id, now)
+            await self.bot.blocklist.load(connection)
+            await ctx.send(f"{entity.mention} has been unblocked")
 
 
 async def setup(bot: Rodhaj) -> None:
