@@ -20,8 +20,32 @@ class Snippets(commands.Cog):
 
     @commands.guild_only()
     @snippet_cmd.command()
-    async def remove(self, ctx, *args):
-        await ctx.send("placeholder for snippet remove")
+    async def remove(self, ctx: GuildContext, name: str):
+        query = """
+        DELETE FROM snippets
+        WHERE guild_id = $1 AND name = $2
+        RETURNING name
+        """
+        result = await self._bot.pool.fetchrow(query, ctx.guild.id, name)
+        if result is None:
+            await ctx.reply(
+                embed=discord.Embed(
+                    title="Deletion failed",
+                    colour=discord.Colour.red(),
+                    description=f"Snippet `{name}` was not found and "
+                    + "hence was not deleted.",
+                ),
+                ephemeral=True,
+            )
+        else:
+            await ctx.reply(
+                embed=discord.Embed(
+                    title="Deletion successful",
+                    colour=discord.Colour.green(),
+                    description=f"Snippet `{name}` was deleted successfully",
+                ),
+                ephemeral=True,
+            )
 
     @commands.guild_only()
     @snippet_cmd.command()
