@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from libs.utils import GuildContext
 from rodhaj import Rodhaj
@@ -29,8 +30,28 @@ class Snippets(commands.Cog):
 
     @commands.guild_only()
     @snippet_cmd.command()
-    async def show(self, ctx, *args):
-        await ctx.send("placeholder for snippet show")
+    async def show(self, ctx: GuildContext, name: str):
+        query = """
+        SELECT content FROM snippets
+        WHERE guild_id = $1 AND name = $2
+        """
+        data = await self._bot.pool.fetchrow(query, ctx.guild.id, name)
+        if data is None:
+            ret_embed = discord.Embed(
+                title="Oops...",
+                colour=discord.Colour.red(),
+                description=f"The snippet `{name}` was not found. "
+                + "To create a new snippet with this name, "
+                + f"please run `snippet create {name} <content>`",
+            )
+            await ctx.reply(embed=ret_embed, ephemeral=True)
+        else:
+            ret_data = discord.Embed(
+                title=f"Snippet information for `{name}`",
+                colour=discord.Colour.green(),
+                description=data[0],
+            )
+            await ctx.reply(embed=ret_data, ephemeral=True)
 
     @commands.guild_only()
     @snippet_cmd.command()
