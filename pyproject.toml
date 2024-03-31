@@ -58,7 +58,7 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 [tool.bandit]
 skips = ["B311", "B101"]
 
-[tool.ruff]
+[tool.ruff.lint]
 ignore = ["E501", "N999", "E402", "S311"]
 select = ["E", "F", "N", "ASYNC", "S", "ERA"]
 
