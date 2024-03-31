@@ -14,14 +14,14 @@ repos:
        additional_dependencies: ["bandit[toml]"]
        
 -   repo: https://github.com/psf/black
-    rev: 24.2.0
+    rev: 24.3.0
     hooks:
     -   id: black
         name: Black
         stages: [commit]
         
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
     -   id: autoflake
         args: ["--in-place", "--remove-unused-variables",  "--recursive"]
@@ -30,7 +30,7 @@ repos:
         stages: [commit]
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.2
+    rev: v0.3.4
     hooks:
       - id: ruff
         name: Ruff
