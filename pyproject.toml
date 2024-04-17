@@ -34,7 +34,7 @@ ruff = "^0.3"
 tox = "^4"
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.2.6"
+sphinx = "^7.3.5"
 sphinx-autobuild = "^2024.4.13"
 sphinx-copybutton = "^0.5.2"
 furo = "^2024.1.29"
