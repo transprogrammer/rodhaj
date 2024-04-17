@@ -1822,13 +1822,13 @@ test = ["cython (>=3.0)", "defusedxml (>=0.7.1)", "pytest (>=6.0)", "setuptools 
 
 [[package]]
 name = "sphinx-autobuild"
-version = "2024.4.13"
+version = "2024.4.16"
 description = "Rebuild Sphinx documentation on changes, with hot reloading in the browser."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "sphinx_autobuild-2024.4.13-py3-none-any.whl", hash = "sha256:97fae5ab04515fef9c7d1aca977082ec60417861eff6406acb06cb95d41d7601"},
-    {file = "sphinx_autobuild-2024.4.13.tar.gz", hash = "sha256:1d023b3a11866a094cd55c8e5a68c155430c033d560f649c1c2bde818f1d8f1b"},
+    {file = "sphinx_autobuild-2024.4.16-py3-none-any.whl", hash = "sha256:f2522779d30fcbf0253e09714f274ce8c608cb6ebcd67922b1c54de59faba702"},
+    {file = "sphinx_autobuild-2024.4.16.tar.gz", hash = "sha256:1c0ed37a1970eed197f9c5a66d65759e7c4e4cba7b5a5d77940752bf1a59f2c7"},
 ]
 
 [package.dependencies]
@@ -1836,10 +1836,11 @@ colorama = "*"
 sphinx = "*"
 starlette = ">=0.35"
 uvicorn = ">=0.25"
-websockets = ">=11.0"
+watchfiles = ">=0.20"
+websockets = ">=11"
 
 [package.extras]
-test = ["pytest (>=6.0)", "pytest-cov"]
+test = ["pytest (>=6)"]
 
 [[package]]
 name = "sphinx-basic-ng"
@@ -2456,4 +2457,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "3fba673a79fbe152149b95ee6b2911aa8d76a4a0f49215083d6750473561b7b7"
+content-hash = "4aad0171186e9fbee00a20f5eabfa4a9b1cfaa1005f5c44ecbc1c8d7c1c9a854"
