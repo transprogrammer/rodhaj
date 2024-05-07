@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, overload
 
 import asyncpg
@@ -9,13 +8,11 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands
-from discord.utils import format_dt, utcnow
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
 from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
-from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from rodhaj import Rodhaj
@@ -29,14 +26,11 @@ class BlocklistEntity(msgspec.Struct, frozen=True):
     bot: Rodhaj
     guild_id: int
     entity_id: int
-    expires: datetime.datetime
-    created: datetime.datetime = utcnow()
-    event: str = "on_blocklist_timer"
 
     def format(self) -> str:
         user = self.bot.get_user(self.entity_id)
         name = user.global_name if user else "Unknown"
-        return f"{name} (ID: {self.entity_id} | Expires: {format_dt(self.expires)})"
+        return f"{name} (ID: {self.entity_id})"
 
 
 class BlocklistPages(SimplePages):
@@ -52,7 +46,7 @@ class Blocklist:
 
     async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
         query = """
-        SELECT guild_id, entity_id, expires, created
+        SELECT guild_id, entity_id
         FROM blocklist;
         """
         rows = await connection.fetch(query)
@@ -65,6 +59,50 @@ class Blocklist:
             self._blocklist = await self._load(connection or self.bot.pool)
         except Exception:
             self._blocklist = {}
+
+    async def put(self, ctx: GuildContext, entity: discord.Member) -> None:
+        self._blocklist[entity.id] = BlocklistEntity(
+            bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
+        )
+        query = """
+        INSERT INTO blocklist (guild_id, entity_id)
+        VALUES ($1, $2);
+        """
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                await connection.execute(query, ctx.guild.id, entity.id)
+            except asyncpg.UniqueViolationError:
+                del self._blocklist[entity.id]
+                await tr.rollback()
+                await ctx.send("User is already in the blocklist")
+            except Exception:
+                del self._blocklist[entity.id]
+                await tr.rollback()
+                await ctx.send("Unable to block user")
+            else:
+                await tr.commit()
+                await ctx.send(f"{entity.mention} has been blocked")
+
+    async def remove(self, entity: discord.Member) -> None:
+        try:
+            del self._blocklist[entity.id]
+
+            # As the first line catches the errors
+            # when we delete an result in our cache,
+            # it doesn't really matter whether it's deleted or not actually.
+            # it would return the same thing - DELETE 0
+            # Note: An timer would have to delete this technically
+            query = """
+            DELETE FROM blocklist
+            WHERE entity_id = $1;
+            """
+            await self.bot.pool.execute(query, entity.id)
+        except KeyError:
+            # We can't find the entry, so we don't do anything else
+            # to guarantee atomic transactions
+            return
 
     @overload
     def get(self, key: int) -> Optional[BlocklistEntity]: ...
@@ -86,6 +124,9 @@ class Blocklist:
 
     def all(self) -> dict[int, BlocklistEntity]:
         return self._blocklist
+
+    def replace(self, blocklist: dict[int, BlocklistEntity]) -> None:
+        self._blocklist = blocklist
 
 
 # Msgspec Structs are usually extremely fast compared to slotted classes
@@ -546,49 +587,42 @@ class Config(commands.Cog):
     @blocklist.command(name="add")
     @app_commands.describe(
         entity="The member to add to the blocklist",
-        until="The date or time that the member is removed from the blocklist",
     )
     async def blocklist_add(
         self,
         ctx: GuildContext,
         entity: discord.Member,
-        *,
-        until: Annotated[
-            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
-        ],
     ) -> None:
         """Adds an member into the blocklist"""
         if not await self.can_be_blocked(ctx, entity):
             await ctx.send("Failed to block entity")
             return
 
+        blocklist = self.bot.blocklist.all().copy()
+        blocklist[entity.id] = BlocklistEntity(
+            bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
+        )
         query = """
-        INSERT INTO blocklist (guild_id, entity_id, expires, event)
-        VALUES ($1, $2, $3, $4);
+        INSERT INTO blocklist (guild_id, entity_id)
+        VALUES ($1, $2);
         """
-        # Strip out timezone as the db doesn't need it
         async with self.bot.pool.acquire() as connection:
             tr = connection.transaction()
             await tr.start()
             try:
-                expires = until.dt.astimezone(datetime.timezone.utc).replace(
-                    tzinfo=None
-                )
-                await connection.execute(
-                    query, ctx.guild.id, entity.id, expires, "on_blocklist_timer"
-                )
+                await connection.execute(query, ctx.guild.id, entity.id)
             except asyncpg.UniqueViolationError:
+                del blocklist[entity.id]
                 await tr.rollback()
-                await ctx.send("This user is already on the blocklist")
+                await ctx.send("User is already in the blocklist")
             except Exception:
+                del blocklist[entity.id]
                 await tr.rollback()
-                await ctx.send(f"Unable to block {entity.global_name}")
+                await ctx.send("Unable to block user")
             else:
                 await tr.commit()
-                await self.bot.blocklist.load(connection)
-                await ctx.send(
-                    f"{entity.mention} has been blocked until {format_dt(until.dt)}"
-                )
+                self.bot.blocklist.replace(blocklist)
+                await ctx.send(f"{entity.mention} has been blocked")
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @blocklist.command(name="remove")
@@ -599,21 +633,27 @@ class Config(commands.Cog):
             await ctx.send("Failed to unblock entity")
             return
 
-        author_entity = self.bot.blocklist.get(ctx.author.id)
-        now = utcnow().astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        if author_entity and now > author_entity.expires:
-            await ctx.send("The entity is already unblocked")
-            return
+        try:
+            blocklist = self.bot.blocklist.all().copy()
+            del blocklist[entity.id]
 
-        query = """
-        DELETE FROM blocklist. 
-        WHERE guild_id = $1 AND entity_id = $2 AND $3 < expires;
-        """
-        # Probably better to bundle them up in one connection rather than pulling from two connections
-        async with self.bot.pool.acquire() as connection:
-            await connection.execute(query, ctx.guild.id, entity.id, now)
-            await self.bot.blocklist.load(connection)
+            # As the first line catches the errors
+            # when we delete an result in our cache,
+            # it doesn't really matter whether it's deleted or not actually.
+            # it would return the same thing - DELETE 0
+            # Note: An timer would have to delete this technically
+            query = """
+            DELETE FROM blocklist
+            WHERE entity_id = $1;
+            """
+            await self.bot.pool.execute(query, entity.id)
+            self.bot.blocklist.replace(blocklist)
             await ctx.send(f"{entity.mention} has been unblocked")
+        except KeyError:
+            # We can't find the entry, so we don't do anything else
+            # to guarantee atomic transactions
+            await ctx.send("Unable to unblock user. Perhaps is the user blocked?")
+            return
 
 
 async def setup(bot: Rodhaj) -> None:
