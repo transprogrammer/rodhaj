@@ -60,50 +60,6 @@ class Blocklist:
         except Exception:
             self._blocklist = {}
 
-    async def put(self, ctx: GuildContext, entity: discord.Member) -> None:
-        self._blocklist[entity.id] = BlocklistEntity(
-            bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
-        )
-        query = """
-        INSERT INTO blocklist (guild_id, entity_id)
-        VALUES ($1, $2);
-        """
-        async with self.bot.pool.acquire() as connection:
-            tr = connection.transaction()
-            await tr.start()
-            try:
-                await connection.execute(query, ctx.guild.id, entity.id)
-            except asyncpg.UniqueViolationError:
-                del self._blocklist[entity.id]
-                await tr.rollback()
-                await ctx.send("User is already in the blocklist")
-            except Exception:
-                del self._blocklist[entity.id]
-                await tr.rollback()
-                await ctx.send("Unable to block user")
-            else:
-                await tr.commit()
-                await ctx.send(f"{entity.mention} has been blocked")
-
-    async def remove(self, entity: discord.Member) -> None:
-        try:
-            del self._blocklist[entity.id]
-
-            # As the first line catches the errors
-            # when we delete an result in our cache,
-            # it doesn't really matter whether it's deleted or not actually.
-            # it would return the same thing - DELETE 0
-            # Note: An timer would have to delete this technically
-            query = """
-            DELETE FROM blocklist
-            WHERE entity_id = $1;
-            """
-            await self.bot.pool.execute(query, entity.id)
-        except KeyError:
-            # We can't find the entry, so we don't do anything else
-            # to guarantee atomic transactions
-            return
-
     @overload
     def get(self, key: int) -> Optional[BlocklistEntity]: ...
 
