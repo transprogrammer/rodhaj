@@ -17,7 +17,7 @@ class RodhajCommandTree(app_commands.CommandTree):
         bot: Rodhaj = interaction.client  # type: ignore # Correct subclass type
         if interaction.user.id in bot.blocklist:
             await interaction.response.send_message(
-                "You have been blocked from using this bot", ephemeral=True
+                "You have been blocked from using Rodhaj", ephemeral=True
             )
             return False
         return True
