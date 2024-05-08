@@ -25,6 +25,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -337,6 +338,13 @@ class Config(commands.Cog):
                 emoji=discord.PartialEmoji(
                     name="\U00002705"
                 ),  # U+2705 White Heavy Check Mark
+                moderated=True,
+            ),
+            discord.ForumTag(
+                name="Locked",
+                emoji=discord.PartialEmoji(
+                    name="\U0001f510"
+                ),  # U+1F510 CLOSED LOCK WITH KEY
                 moderated=True,
             ),
         ]
