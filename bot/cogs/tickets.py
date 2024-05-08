@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -147,6 +148,28 @@ class Tickets(commands.Cog):
             applied_tags=tags, archived=True, locked=True, reason=reason
         )
         return locked_thread
+
+    async def soft_lock_ticket(
+        self, thread: discord.Thread, reason: Optional[str] = None
+    ) -> discord.Thread:
+        tags = thread.applied_tags
+        locked_tag = self.get_locked_tag(thread.parent)
+
+        if locked_tag is not None and not any(tag.id == locked_tag.id for tag in tags):
+            tags.insert(0, locked_tag)
+
+        return await thread.edit(applied_tags=tags, locked=True, reason=reason)
+
+    async def soft_unlock_ticket(
+        self, thread: discord.Thread, reason: Optional[str] = None
+    ) -> discord.Thread:
+        tags = thread.applied_tags
+        locked_tag = self.get_locked_tag(thread.parent)
+
+        if locked_tag is not None and any(tag.id == locked_tag.id for tag in tags):
+            tags.remove(locked_tag)
+
+        return await thread.edit(applied_tags=tags, locked=False, reason=reason)
 
     async def close_ticket(
         self,
@@ -301,6 +324,19 @@ class Tickets(commands.Cog):
         if solved_tag is None:
             return None
         return solved_tag
+
+    def get_locked_tag(
+        self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
+    ):
+        if not isinstance(channel, discord.ForumChannel):
+            return None
+
+        all_tags = channel.available_tags
+
+        locked_tag = discord.utils.get(all_tags, name="Locked")
+        if locked_tag is None:
+            return None
+        return locked_tag
 
     ### Feature commands
 

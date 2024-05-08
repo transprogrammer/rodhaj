@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import Optional, Sequence
 
 from dateutil.relativedelta import relativedelta
-
-if TYPE_CHECKING:
-    pass
 
 
 class Plural:

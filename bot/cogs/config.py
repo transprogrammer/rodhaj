@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    NamedTuple,
+    Optional,
+    Union,
+    overload,
+)
 
 import asyncpg
 import discord
@@ -8,6 +16,7 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands
+from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
@@ -15,11 +24,18 @@ from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
+    from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
+
+
+class BlocklistTicket(NamedTuple):
+    cog: Tickets
+    thread: discord.Thread
 
 
 class BlocklistEntity(msgspec.Struct, frozen=True):
@@ -216,6 +232,16 @@ class Config(commands.Cog):
             return False
 
         return True
+
+    async def get_block_ticket(
+        self, entity: discord.Member
+    ) -> Optional[BlocklistTicket]:
+        tickets_cog: Optional[Tickets] = self.bot.get_cog("Tickets")  # type: ignore
+        cached_ticket = await get_cached_thread(self.bot, entity.id)
+        if not tickets_cog or not cached_ticket:
+            return
+
+        return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -554,6 +580,11 @@ class Config(commands.Cog):
             await ctx.send("Failed to block entity")
             return
 
+        block_ticket = await self.get_block_ticket(entity)
+        if not block_ticket:
+            await ctx.send("Unable to obtain block ticket")
+            return
+
         blocklist = self.bot.blocklist.all().copy()
         blocklist[entity.id] = BlocklistEntity(
             bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
@@ -562,6 +593,7 @@ class Config(commands.Cog):
         INSERT INTO blocklist (guild_id, entity_id)
         VALUES ($1, $2);
         """
+        lock_reason = f"{entity.global_name} is blocked from using Rodhaj"
         async with self.bot.pool.acquire() as connection:
             tr = connection.transaction()
             await tr.start()
@@ -578,6 +610,10 @@ class Config(commands.Cog):
             else:
                 await tr.commit()
                 self.bot.blocklist.replace(blocklist)
+
+                await block_ticket.cog.soft_lock_ticket(
+                    block_ticket.thread, lock_reason
+                )
                 await ctx.send(f"{entity.mention} has been blocked")
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
@@ -587,6 +623,11 @@ class Config(commands.Cog):
         """Removes an member from the blocklist"""
         if not await self.can_be_blocked(ctx, entity):
             await ctx.send("Failed to unblock entity")
+            return
+
+        block_ticket = await self.get_block_ticket(entity)
+        if not block_ticket:
+            await ctx.send("Unable to obtain block ticket")
             return
 
         try:
@@ -602,8 +643,12 @@ class Config(commands.Cog):
             DELETE FROM blocklist
             WHERE entity_id = $1;
             """
+            unlock_reason = f"{entity.global_name} is unblocked from using Rodhaj"
             await self.bot.pool.execute(query, entity.id)
             self.bot.blocklist.replace(blocklist)
+            await block_ticket.cog.soft_unlock_ticket(
+                block_ticket.thread, unlock_reason
+            )
             await ctx.send(f"{entity.mention} has been unblocked")
         except KeyError:
             # We can't find the entry, so we don't do anything else
