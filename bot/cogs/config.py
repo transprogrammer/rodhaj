@@ -25,7 +25,6 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
-
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
