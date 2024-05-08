@@ -29,6 +29,7 @@ Rodhaj offers these features in addition to ones found on ModMail:
 - Advanced tags system
 - Modern touch using forum channels, webhooks, and best practices
 - Customizable settings
+- Advanced blocklist with history, notes, and links to past tickets
 
 What's Different?
 -----------------
