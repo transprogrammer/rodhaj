@@ -25,6 +25,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -589,7 +590,9 @@ class Config(commands.Cog):
 
         block_ticket = await self.get_block_ticket(entity)
         if not block_ticket:
-            await ctx.send("Unable to obtain block ticket")
+            await ctx.send(
+                "Unable to obtain block ticket. Perhaps the user doesn't have an active ticket?"
+            )
             return
 
         blocklist = self.bot.blocklist.all().copy()
@@ -597,8 +600,14 @@ class Config(commands.Cog):
             bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
         )
         query = """
-        INSERT INTO blocklist (guild_id, entity_id)
-        VALUES ($1, $2);
+        WITH blocklist_insert AS (
+            INSERT INTO blocklist (guild_id, entity_id)
+            VALUES ($1, $2)
+            RETURNING entity_id
+        )
+        UPDATE tickets
+        SET locked = true
+        WHERE owner_id = (SELECT entity_id FROM blocklist_insert);
         """
         lock_reason = f"{entity.global_name} is blocked from using Rodhaj"
         async with self.bot.pool.acquire() as connection:
@@ -634,34 +643,50 @@ class Config(commands.Cog):
 
         block_ticket = await self.get_block_ticket(entity)
         if not block_ticket:
-            await ctx.send("Unable to obtain block ticket")
+            # Must mean that they must have a thread cached
+            await ctx.send("Unable to obtain block ticket.")
             return
 
+        blocklist = self.bot.blocklist.all().copy()
         try:
-            blocklist = self.bot.blocklist.all().copy()
             del blocklist[entity.id]
-
-            # As the first line catches the errors
-            # when we delete an result in our cache,
-            # it doesn't really matter whether it's deleted or not actually.
-            # it would return the same thing - DELETE 0
-            # Note: An timer would have to delete this technically
-            query = """
-            DELETE FROM blocklist
-            WHERE entity_id = $1;
-            """
-            unlock_reason = f"{entity.global_name} is unblocked from using Rodhaj"
-            await self.bot.pool.execute(query, entity.id)
-            self.bot.blocklist.replace(blocklist)
-            await block_ticket.cog.soft_unlock_ticket(
-                block_ticket.thread, unlock_reason
-            )
-            await ctx.send(f"{entity.mention} has been unblocked")
         except KeyError:
-            # We can't find the entry, so we don't do anything else
-            # to guarantee atomic transactions
-            await ctx.send("Unable to unblock user. Perhaps is the user blocked?")
+            await ctx.send(
+                "Unable to unblock user. Perhaps is the user not blocked yet?"
+            )
             return
+
+        # As the first line catches the errors
+        # when we delete an result in our cache,
+        # it doesn't really matter whether it's deleted or not actually.
+        # it would return the same thing - DELETE 0
+        # Note: An timer would have to delete this technically
+        query = """
+        WITH blocklist_delete AS (
+            DELETE FROM blocklist
+            WHERE entity_id = $1
+            RETURNING entity_id
+        )
+        UPDATE tickets
+        SET locked = false
+        WHERE owner_id = (SELECT entity_id FROM blocklist_delete);
+        """
+        unlock_reason = f"{entity.global_name} is unblocked from using Rodhaj"
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                await connection.execute(query, entity.id)
+            except Exception:
+                await tr.rollback()
+                await ctx.send("Unable to block user")
+            else:
+                await tr.commit()
+                self.bot.blocklist.replace(blocklist)
+                await block_ticket.cog.soft_unlock_ticket(
+                    block_ticket.thread, unlock_reason
+                )
+                await ctx.send(f"{entity.mention} has been unblocked")
 
 
 async def setup(bot: Rodhaj) -> None:

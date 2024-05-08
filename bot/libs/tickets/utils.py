@@ -57,7 +57,7 @@ async def get_partial_ticket(
         PartialTicket: An representation of a "partial" ticket
     """
     query = """
-    SELECT id, thread_id, owner_id, location_id
+    SELECT id, thread_id, owner_id, location_id, locked
     FROM tickets
     WHERE owner_id = $1;
     """

@@ -36,7 +36,7 @@ class TicketThread(msgspec.Struct):
 
 
 class PartialTicket:
-    __slots__ = ("id", "thread_id", "owner_id", "location_id")
+    __slots__ = ("id", "thread_id", "owner_id", "location_id", "locked")
 
     def __init__(self, record: Optional[asyncpg.Record] = None):
         self.id = None
@@ -46,6 +46,7 @@ class PartialTicket:
             self.thread_id = record["thread_id"]
             self.owner_id = record["owner_id"]
             self.location_id = record["location_id"]
+            self.locked = record["locked"]
 
 
 class PartialConfig:

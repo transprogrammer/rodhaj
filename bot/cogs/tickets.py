@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -399,6 +400,7 @@ class Tickets(commands.Cog):
         if ticket_owner is None:
             await ctx.send("No owner could be found for the current ticket")
             return
+        partial_ticket_owner = await get_partial_ticket(self.bot, ticket_owner.id)
 
         dispatcher = GuildWebhookDispatcher(self.bot, ctx.guild.id)
         tw = await dispatcher.get_ticket_webhook()
@@ -411,6 +413,14 @@ class Tickets(commands.Cog):
         embed.description = safe_content(message)
 
         if isinstance(ctx.channel, discord.Thread):
+            if (
+                partial_ticket_owner.id
+                and partial_ticket_owner.locked
+                and ctx.channel.locked
+            ):
+                await ctx.send("This ticket is locked. You cannot reply in this ticket")
+                return
+
             # May hit the ratelimit hard. Note this
             await ctx.message.delete(delay=30.0)
             await tw.send(
