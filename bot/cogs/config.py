@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    NamedTuple,
+    Optional,
+    Union,
+    overload,
+)
 
 import asyncpg
 import discord
@@ -8,17 +16,88 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands
+from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
+from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
+    from cogs.tickets import Tickets
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
+
+
+class BlocklistTicket(NamedTuple):
+    cog: Tickets
+    thread: discord.Thread
+
+
+class BlocklistEntity(msgspec.Struct, frozen=True):
+    bot: Rodhaj
+    guild_id: int
+    entity_id: int
+
+    def format(self) -> str:
+        user = self.bot.get_user(self.entity_id)
+        name = user.global_name if user else "Unknown"
+        return f"{name} (ID: {self.entity_id})"
+
+
+class BlocklistPages(SimplePages):
+    def __init__(self, entries: list[BlocklistEntity], *, ctx: GuildContext):
+        converted = [entry.format() for entry in entries]
+        super().__init__(converted, ctx=ctx)
+
+
+class Blocklist:
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self._blocklist: dict[int, BlocklistEntity] = {}
+
+    async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
+        query = """
+        SELECT guild_id, entity_id
+        FROM blocklist;
+        """
+        rows = await connection.fetch(query)
+        return {
+            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
+        }
+
+    async def load(self, connection: Optional[asyncpg.Connection] = None):
+        try:
+            self._blocklist = await self._load(connection or self.bot.pool)
+        except Exception:
+            self._blocklist = {}
+
+    @overload
+    def get(self, key: int) -> Optional[BlocklistEntity]: ...
+
+    @overload
+    def get(self, key: int) -> BlocklistEntity: ...
+
+    def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
+        return self._blocklist.get(key, default)
+
+    def __contains__(self, item: int) -> bool:
+        return item in self._blocklist
+
+    def __getitem__(self, item: int) -> BlocklistEntity:
+        return self._blocklist[item]
+
+    def __len__(self) -> int:
+        return len(self._blocklist)
+
+    def all(self) -> dict[int, BlocklistEntity]:
+        return self._blocklist
+
+    def replace(self, blocklist: dict[int, BlocklistEntity]) -> None:
+        self._blocklist = blocklist
 
 
 # Msgspec Structs are usually extremely fast compared to slotted classes
@@ -30,7 +109,6 @@ class GuildConfig(msgspec.Struct):
     logging_channel_id: int
     logging_broadcast_url: str
     ticket_broadcast_url: str
-    locked: bool = False
 
     @property
     def category_channel(self) -> Optional[discord.CategoryChannel]:
@@ -74,7 +152,7 @@ class GuildWebhookDispatcher:
     @alru_cache()
     async def get_config(self) -> Optional[GuildConfig]:
         query = """
-        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, locked
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url
         FROM guild_config
         WHERE id = $1;
         """
@@ -100,8 +178,8 @@ class SetupFlags(commands.FlagConverter):
 
 
 class PrefixConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str):
-        user_id = ctx.bot.user.id
+    async def convert(self, ctx: GuildContext, argument: str):
+        user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
         if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
             raise commands.BadArgument("That is a reserved prefix already in use.")
         if len(argument) > 100:
@@ -138,6 +216,31 @@ class Config(commands.Cog):
             return f"`{prefixes}`"
 
         return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+
+    ### Blocklist Utilities
+
+    async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
+        if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
+            return False
+
+        # Hierarchy check
+        if (
+            isinstance(ctx.author, discord.Member)
+            and entity.top_role > ctx.author.top_role
+        ):
+            return False
+
+        return True
+
+    async def get_block_ticket(
+        self, entity: discord.Member
+    ) -> Optional[BlocklistTicket]:
+        tickets_cog: Optional[Tickets] = self.bot.get_cog("Tickets")  # type: ignore
+        cached_ticket = await get_cached_thread(self.bot, entity.id)
+        if not tickets_cog or not cached_ticket:
+            return
+
+        return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -234,6 +337,13 @@ class Config(commands.Cog):
                 emoji=discord.PartialEmoji(
                     name="\U00002705"
                 ),  # U+2705 White Heavy Check Mark
+                moderated=True,
+            ),
+            discord.ForumTag(
+                name="Locked",
+                emoji=discord.PartialEmoji(
+                    name="\U0001f510"
+                ),  # U+1F510 CLOSED LOCK WITH KEY
                 moderated=True,
             ),
         ]
@@ -445,6 +555,137 @@ class Config(commands.Cog):
             await ctx.send("Confirmation timed out. Cancelled deletion...")
         else:
             await ctx.send("Confirmation cancelled. Please try again")
+
+    # In order to prevent abuse, 4 checks must be performed:
+    # 1. Permissions check
+    # 2. Is the selected entity higher than the author's current hierarchy? (in terms of role and members)
+    # 3. Is the bot itself the entity getting blocklisted?
+    # 4. Is the author themselves trying to get blocklisted?
+    # This system must be addressed with care as it is extremely dangerous
+    # TODO: Add an history command to view past history of entity
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
+    @commands.hybrid_group(name="blocklist", fallback="info")
+    async def blocklist(self, ctx: GuildContext) -> None:
+        """Manages and views the current blocklist"""
+        blocklist = self.bot.blocklist.all()
+        pages = BlocklistPages([entry for entry in blocklist.values()], ctx=ctx)
+        await pages.start()
+
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @blocklist.command(name="add")
+    @app_commands.describe(
+        entity="The member to add to the blocklist",
+    )
+    async def blocklist_add(
+        self,
+        ctx: GuildContext,
+        entity: discord.Member,
+    ) -> None:
+        """Adds an member into the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
+            await ctx.send("Failed to block entity")
+            return
+
+        block_ticket = await self.get_block_ticket(entity)
+        if not block_ticket:
+            await ctx.send(
+                "Unable to obtain block ticket. Perhaps the user doesn't have an active ticket?"
+            )
+            return
+
+        blocklist = self.bot.blocklist.all().copy()
+        blocklist[entity.id] = BlocklistEntity(
+            bot=self.bot, guild_id=ctx.guild.id, entity_id=entity.id
+        )
+        query = """
+        WITH blocklist_insert AS (
+            INSERT INTO blocklist (guild_id, entity_id)
+            VALUES ($1, $2)
+            RETURNING entity_id
+        )
+        UPDATE tickets
+        SET locked = true
+        WHERE owner_id = (SELECT entity_id FROM blocklist_insert);
+        """
+        lock_reason = f"{entity.global_name} is blocked from using Rodhaj"
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                await connection.execute(query, ctx.guild.id, entity.id)
+            except asyncpg.UniqueViolationError:
+                del blocklist[entity.id]
+                await tr.rollback()
+                await ctx.send("User is already in the blocklist")
+            except Exception:
+                del blocklist[entity.id]
+                await tr.rollback()
+                await ctx.send("Unable to block user")
+            else:
+                await tr.commit()
+                self.bot.blocklist.replace(blocklist)
+
+                await block_ticket.cog.soft_lock_ticket(
+                    block_ticket.thread, lock_reason
+                )
+                await ctx.send(f"{entity.mention} has been blocked")
+
+    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @blocklist.command(name="remove")
+    @app_commands.describe(entity="The member to remove from the blocklist")
+    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
+        """Removes an member from the blocklist"""
+        if not await self.can_be_blocked(ctx, entity):
+            await ctx.send("Failed to unblock entity")
+            return
+
+        block_ticket = await self.get_block_ticket(entity)
+        if not block_ticket:
+            # Must mean that they must have a thread cached
+            await ctx.send("Unable to obtain block ticket.")
+            return
+
+        blocklist = self.bot.blocklist.all().copy()
+        try:
+            del blocklist[entity.id]
+        except KeyError:
+            await ctx.send(
+                "Unable to unblock user. Perhaps is the user not blocked yet?"
+            )
+            return
+
+        # As the first line catches the errors
+        # when we delete an result in our cache,
+        # it doesn't really matter whether it's deleted or not actually.
+        # it would return the same thing - DELETE 0
+        # Note: An timer would have to delete this technically
+        query = """
+        WITH blocklist_delete AS (
+            DELETE FROM blocklist
+            WHERE entity_id = $1
+            RETURNING entity_id
+        )
+        UPDATE tickets
+        SET locked = false
+        WHERE owner_id = (SELECT entity_id FROM blocklist_delete);
+        """
+        unlock_reason = f"{entity.global_name} is unblocked from using Rodhaj"
+        async with self.bot.pool.acquire() as connection:
+            tr = connection.transaction()
+            await tr.start()
+            try:
+                await connection.execute(query, entity.id)
+            except Exception:
+                await tr.rollback()
+                await ctx.send("Unable to block user")
+            else:
+                await tr.commit()
+                self.bot.blocklist.replace(blocklist)
+                await block_ticket.cog.soft_unlock_ticket(
+                    block_ticket.thread, unlock_reason
+                )
+                await ctx.send(f"{entity.mention} has been unblocked")
 
 
 async def setup(bot: Rodhaj) -> None:
