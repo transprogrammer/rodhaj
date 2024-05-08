@@ -25,6 +25,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -555,9 +556,10 @@ class Config(commands.Cog):
     # 3. Is the bot itself the entity getting blocklisted?
     # 4. Is the author themselves trying to get blocklisted?
     # This system must be addressed with care as it is extremely dangerous
+    # TODO: Add an history command to view past history of entity
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
     @commands.guild_only()
-    @config.group(name="blocklist", fallback="info")
+    @commands.hybrid_group(name="blocklist", fallback="info")
     async def blocklist(self, ctx: GuildContext) -> None:
         """Manages and views the current blocklist"""
         blocklist = self.bot.blocklist.all()

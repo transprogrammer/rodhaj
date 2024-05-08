@@ -124,6 +124,7 @@ class Rodhaj(commands.Bot):
             return
 
         # Ignore users in the blocklist
+        # Maybe at some point we can process these and send back a result
         if message.author.id in self.blocklist:
             return
 
