@@ -37,6 +37,6 @@ CMD ["/rodhaj/start.sh"]
 STOPSIGNAL SIGTERM
 
 LABEL org.opencontainers.image.title="Rodhaj"
-LABEL org.opencontainers.image.description="A discord modmail bot"
+LABEL org.opencontainers.image.description="A improved, modern version of ModMail for the transprogrammer community"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/transprogrammer/rodhaj"
