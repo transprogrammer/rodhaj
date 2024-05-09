@@ -148,6 +148,28 @@ class Tickets(commands.Cog):
         )
         return locked_thread
 
+    async def soft_lock_ticket(
+        self, thread: discord.Thread, reason: Optional[str] = None
+    ) -> discord.Thread:
+        tags = thread.applied_tags
+        locked_tag = self.get_locked_tag(thread.parent)
+
+        if locked_tag is not None and not any(tag.id == locked_tag.id for tag in tags):
+            tags.insert(0, locked_tag)
+
+        return await thread.edit(applied_tags=tags, locked=True, reason=reason)
+
+    async def soft_unlock_ticket(
+        self, thread: discord.Thread, reason: Optional[str] = None
+    ) -> discord.Thread:
+        tags = thread.applied_tags
+        locked_tag = self.get_locked_tag(thread.parent)
+
+        if locked_tag is not None and any(tag.id == locked_tag.id for tag in tags):
+            tags.remove(locked_tag)
+
+        return await thread.edit(applied_tags=tags, locked=False, reason=reason)
+
     async def close_ticket(
         self,
         user: Union[discord.User, discord.Member, int],
@@ -302,6 +324,19 @@ class Tickets(commands.Cog):
             return None
         return solved_tag
 
+    def get_locked_tag(
+        self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
+    ):
+        if not isinstance(channel, discord.ForumChannel):
+            return None
+
+        all_tags = channel.available_tags
+
+        locked_tag = discord.utils.get(all_tags, name="Locked")
+        if locked_tag is None:
+            return None
+        return locked_tag
+
     ### Feature commands
 
     # This command requires the manage_threads permissions for the bot
@@ -364,6 +399,7 @@ class Tickets(commands.Cog):
         if ticket_owner is None:
             await ctx.send("No owner could be found for the current ticket")
             return
+        partial_ticket_owner = await get_partial_ticket(self.bot, ticket_owner.id)
 
         dispatcher = GuildWebhookDispatcher(self.bot, ctx.guild.id)
         tw = await dispatcher.get_ticket_webhook()
@@ -376,6 +412,14 @@ class Tickets(commands.Cog):
         embed.description = safe_content(message)
 
         if isinstance(ctx.channel, discord.Thread):
+            if (
+                partial_ticket_owner.id
+                and partial_ticket_owner.locked
+                and ctx.channel.locked
+            ):
+                await ctx.send("This ticket is locked. You cannot reply in this ticket")
+                return
+
             # May hit the ratelimit hard. Note this
             await ctx.message.delete(delay=30.0)
             await tw.send(

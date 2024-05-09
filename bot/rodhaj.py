@@ -8,7 +8,7 @@ import asyncpg
 import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
-from cogs.config import GuildWebhookDispatcher
+from cogs.config import Blocklist, GuildWebhookDispatcher
 from discord.ext import commands
 from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
@@ -53,6 +53,7 @@ class Rodhaj(commands.Bot):
             *args,
             **kwargs,
         )
+        self.blocklist = Blocklist(self)
         self.default_prefix = "r>"
         self.logger = logging.getLogger("rodhaj")
         self.session = session
@@ -120,6 +121,11 @@ class Rodhaj(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         # Ignore all messages from the bot
         if message.author.bot:
+            return
+
+        # Ignore users in the blocklist
+        # Maybe at some point we can process these and send back a result
+        if message.author.id in self.blocklist:
             return
 
         # Since we are already using an RoboContext to deal with process commands,
@@ -205,6 +211,7 @@ class Rodhaj(commands.Bot):
         # Useful for debugging purposes
         await self.load_extension("jishaku")
 
+        await self.blocklist.load()
         self.partial_config = await self.fetch_partial_config()
 
         if self._dev_mode:
