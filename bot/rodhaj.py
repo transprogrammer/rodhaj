@@ -9,6 +9,7 @@ import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import Blocklist, GuildWebhookDispatcher
+from cogs.ext.prometheus import Metrics
 from discord.ext import commands
 from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
@@ -56,6 +57,7 @@ class Rodhaj(commands.Bot):
         self.blocklist = Blocklist(self)
         self.default_prefix = "r>"
         self.logger = logging.getLogger("rodhaj")
+        self.metrics = Metrics(self)
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
@@ -65,6 +67,7 @@ class Rodhaj(commands.Bot):
         )
         self._dev_mode = config.rodhaj.get("dev_mode", False)
         self._reloader = Reloader(self, Path(__file__).parent)
+        self._prometheus = config.rodhaj.get("prometheus", {})
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
@@ -213,6 +216,16 @@ class Rodhaj(commands.Bot):
 
         await self.blocklist.load()
         self.partial_config = await self.fetch_partial_config()
+
+        if self._prometheus.get("enabled", False):
+            await self.load_extension("cogs.ext.prometheus")
+            prom_host = self._prometheus.get("host", "127.0.0.1")
+            prom_port = self._prometheus.get("port", 6789)
+
+            await self.metrics.start(host=prom_host, port=prom_port)
+            self.logger.info("Prometheus Server started on %s:%s", prom_host, prom_port)
+
+            self.metrics.fill()
 
         if self._dev_mode:
             self.logger.info("Dev mode is enabled. Loading Reloader")

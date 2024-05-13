@@ -23,6 +23,8 @@ jishaku = "^2.5.2"
 pyyaml = "^6.0.1"
 watchfiles = "^0.21.0"
 typing-extensions = "^4.11.0"
+prometheus-client = "^0.20.0"
+prometheus-async = "^22.2.0"
 
 [tool.poetry.group.dev.dependencies]
 # These are pinned by major version
