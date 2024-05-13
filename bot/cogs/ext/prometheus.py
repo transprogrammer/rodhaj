@@ -12,7 +12,8 @@ try:
     from prometheus_client import Counter, Enum, Gauge, Info, Summary
 except ImportError:
     raise RuntimeError(
-        "Prometheus libraries are required to be installed. Either install those libraries or disable Prometheus extension"
+        "Prometheus libraries are required to be installed. "
+        "Either install those libraries or disable Prometheus extension"
     )
 
 if TYPE_CHECKING:
