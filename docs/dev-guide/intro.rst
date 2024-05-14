@@ -104,3 +104,24 @@ pre-built Docker Compose file is provided. Setup instructions are as follows:
 .. code-block:: bash
 
     docker compose -f docker-compose-dev.yml up -d
+
+Extensions
+==========
+
+Rodhaj includes the following extensions as noted:
+
+Prometheus Exporter
+^^^^^^^^^^^^^^^^^^^
+
+Rodhaj currently includes an `Prometheus <https://prometheus.io/>`_ exporter. 
+This exporter is intended to be used in production environments, where
+metrics surrounding ticket usage, bot health, and others would provide
+valuable insight. This exporter can be enabled by setting the 
+``rodhaj.prometheus.enabled`` key within ``config.yml``. 
+
+.. note::
+
+    Prometheus client libraries are listed within the
+    ``requirements.txt`` file. By default, these libraries
+    should be installed, but disabling the exporter will not 
+    affect the usage of these libraries.
