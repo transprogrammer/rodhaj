@@ -220,7 +220,7 @@ class Rodhaj(commands.Bot):
         if self._prometheus.get("enabled", False):
             await self.load_extension("cogs.ext.prometheus")
             prom_host = self._prometheus.get("host", "127.0.0.1")
-            prom_port = self._prometheus.get("port", 6789)
+            prom_port = self._prometheus.get("port", 8555)
 
             await self.metrics.start(host=prom_host, port=prom_port)
             self.logger.info("Prometheus Server started on %s:%s", prom_host, prom_port)
