@@ -623,6 +623,7 @@ class Config(commands.Cog):
                 await tr.rollback()
                 await ctx.send("Unable to block user")
             else:
+                self.bot.metrics.features.blocked_users.inc()
                 await tr.commit()
                 self.bot.blocklist.replace(blocklist)
 
@@ -680,6 +681,7 @@ class Config(commands.Cog):
                 await tr.rollback()
                 await ctx.send("Unable to block user")
             else:
+                self.bot.metrics.features.blocked_users.dec()
                 await tr.commit()
                 self.bot.blocklist.replace(blocklist)
                 await block_ticket.cog.soft_unlock_ticket(

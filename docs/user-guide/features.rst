@@ -53,3 +53,16 @@ This feature acts very similar to an block/unblock feature. All blocked users
 as of writing will not get a message from the bot. Planned features with this feature
 include an timer to automatically remove those who are on the blocklist and 
 an history feature to track past incidents.
+
+Prometheus Extension
+--------------------
+
+In order to aid in observability, Rodhaj includes an `Prometheus <https://prometheus.io/>`_ exporter.
+This is included as an extension to Rodhaj, which when used, provides valuable information 
+in regards to usage, and other metrics. This extension is designed primarily to be used in 
+production environments.
+
+.. note::
+
+    Disabling this extension will have no effect
+    on the bot itself.
