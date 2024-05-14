@@ -47,11 +47,6 @@ class FeatureCollector:
             f"{METRIC_PREFIX}blocked_users", "Number of currently blocked users"
         )
 
-    def reset(self) -> None:
-        self.active_tickets.set(0)
-        self.closed_tickets.reset()
-        self.blocked_users.set(0)
-
 
 # Maybe load all of these from an json file next time
 class Metrics:
