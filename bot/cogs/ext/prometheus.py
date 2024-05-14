@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import platform
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands, tasks
@@ -22,6 +22,37 @@ if TYPE_CHECKING:
 METRIC_PREFIX = "discord_"
 
 
+class FeatureCollector:
+    __slots__ = (
+        "bot",
+        "active_tickets",
+        "closed_tickets",
+        "locked_tickets",
+        "blocked_users",
+    )
+
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self.active_tickets = Gauge(
+            f"{METRIC_PREFIX}active_tickets", "Amount of active tickets"
+        )
+        self.closed_tickets = Counter(
+            f"{METRIC_PREFIX}closed_tickets", "Number of closed tickets in this session"
+        )
+        self.locked_tickets = Gauge(
+            f"{METRIC_PREFIX}locked_tickets",
+            "Number of soft locked tickets in this session",
+        )
+        self.blocked_users = Gauge(
+            f"{METRIC_PREFIX}blocked_users", "Number of currently blocked users"
+        )
+
+    def reset(self) -> None:
+        self.active_tickets.set(0)
+        self.closed_tickets.reset()
+        self.blocked_users.set(0)
+
+
 # Maybe load all of these from an json file next time
 class Metrics:
     __slots__ = ("bot", "connected", "latency", "commands", "version", "features")
@@ -37,7 +68,7 @@ class Metrics:
         self.latency = Gauge(f"{METRIC_PREFIX}latency", "Latency to Discord", ["shard"])
         self.commands = Summary(f"{METRIC_PREFIX}commands", "Total commands executed")
         self.version = Info(f"{METRIC_PREFIX}version", "Versions of the bot")
-        self.features: dict[str, Union[Counter, Gauge, Summary]] = {}
+        self.features = FeatureCollector(self.bot)
 
     def get_commands(self) -> int:
         total_commands = 0

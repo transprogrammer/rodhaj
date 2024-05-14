@@ -20,6 +20,7 @@ from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -151,6 +152,7 @@ class Tickets(commands.Cog):
     async def soft_lock_ticket(
         self, thread: discord.Thread, reason: Optional[str] = None
     ) -> discord.Thread:
+        self.bot.metrics.features.locked_tickets.inc()
         tags = thread.applied_tags
         locked_tag = self.get_locked_tag(thread.parent)
 
@@ -162,6 +164,7 @@ class Tickets(commands.Cog):
     async def soft_unlock_ticket(
         self, thread: discord.Thread, reason: Optional[str] = None
     ) -> discord.Thread:
+        self.bot.metrics.features.locked_tickets.dec()
         tags = thread.applied_tags
         locked_tag = self.get_locked_tag(thread.parent)
 
@@ -176,6 +179,8 @@ class Tickets(commands.Cog):
         connection: Union[asyncpg.Pool, asyncpg.Connection],
         author: Optional[Union[discord.User, discord.Member]] = None,
     ) -> Optional[discord.Thread]:
+        self.bot.metrics.features.closed_tickets.inc()
+        self.bot.metrics.features.active_tickets.dec()
         if isinstance(user, int):
             user = self.bot.get_user(user) or (await self.bot.fetch_user(user))
 
@@ -280,6 +285,7 @@ class Tickets(commands.Cog):
                     status=False, ticket=created_ticket, msg="Could not create ticket"
                 )
             else:
+                self.bot.metrics.features.active_tickets.inc()
                 await tr.commit()
                 return TicketOutput(
                     status=True,
