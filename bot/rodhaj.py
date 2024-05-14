@@ -57,6 +57,7 @@ class Rodhaj(commands.Bot):
         self.blocklist = Blocklist(self)
         self.default_prefix = "r>"
         self.logger = logging.getLogger("rodhaj")
+        self.metrics = Metrics(self)
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
@@ -67,9 +68,6 @@ class Rodhaj(commands.Bot):
         self._dev_mode = config.rodhaj.get("dev_mode", False)
         self._reloader = Reloader(self, Path(__file__).parent)
         self._prometheus = config.rodhaj.get("prometheus", {})
-
-        if self._prometheus.get("enabled", False):
-            self.metrics = Metrics(self)
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
