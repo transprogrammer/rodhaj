@@ -11,9 +11,8 @@ Before you get started, please ensure you have the following installed:
 
 - `Git <https://git-scm.com>`_
 - `Python 3 <https://python.org>`_
-- `Poetry <https://python-poetry.org>`_
 - `Docker <https://docker.com>`_
-- Discord Account + App 
+- Discord Account + `App <https://discordpy.readthedocs.io/en/stable/discord.html>`_ 
 
 If you are using Linux, the following dependencies will need to be installed:
 
@@ -41,35 +40,52 @@ Setup
 **Rodhaj only supports Python 3.9 or higher**
 
 .. important::
-    Ensure that you are in the root of the repo throughout this process
-    and have the database running
+  - Ensure that you are in the root of the repo throughout this process and have the database running
+    
+  - Rodhaj also supports Poetry, but for simplicity, virtualenvs are demonstrated here instead
 
 1. Fork and clone the repo
 
-2. Install dependencies and set up pre-commits
+2. Create an virtualenv
 
 .. code-block:: bash
 
-    poetry install \
-    && poetry run pre-commit install
+   python3 -m venv rodhaj
 
-3. Copy over the ``config-example.yml`` template over to the ``bot`` directory. Modify the values as appropriate.
+3. Activate the virtualenv
+
+.. code-block:: bash
+  
+  # Linux/MacOS
+  $ source rodhaj/bin/activate
+
+  # Windows
+  $ rodhaj/Scripts/activate.bat
+
+4. Install dependencies and set up pre-commit hooks
+
+.. code-block:: bash
+
+   pip install -r requirements-dev.txt \
+   && pre-commit install
+
+5. Copy over the ``config-example.yml`` template over to the ``bot`` directory. Modify the values as appropriate.
 
 .. code-block:: bash
 
     cp config-example.yml bot/config.yml
 
-4. Run the SQL migrations
+6. Run the SQL migrations
 
 .. code-block:: bash
 
-    poetry run python bot/migrations.py init
+    python3 bot/migrations.py init
 
-5. In order to demonstrate, you can run the bot to test everything out
+7. In order to demonstrate, you can run the bot to test everything out
 
 .. code-block:: bash
 
-    poetry run python bot/launcher.py
+    python3 bot/launcher.py
 
 Database
 --------
@@ -93,11 +109,11 @@ Using Docker
 If you decide to use Docker to run the local PostgreSQL server, then a
 pre-built Docker Compose file is provided. Setup instructions are as follows:
 
-1. Copy ``envs/docker.env`` to ``docker-compose.env`` within the root of the repo. Modify as appropriate.
+1. Copy ``envs/docker.env`` to ``.env`` within the root of the repo. Modify as appropriate.
 
 .. code-block:: bash
 
-    cp envs/docker.env docker-compose.env
+    cp envs/docker.env .env
 
 2. Run the following command to start the PostgreSQL server
 
