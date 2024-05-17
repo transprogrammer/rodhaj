@@ -42,7 +42,7 @@ Setup
 .. important::
   - Ensure that you are in the root of the repo throughout this process and have the database running
     
-  - Rodhaj also supports Poetry, but for simplicity, virtualenvs are demonstrated instead
+  - Rodhaj also supports Poetry, but for simplicity, virtualenvs are demonstrated here instead
 
 1. Fork and clone the repo
 
