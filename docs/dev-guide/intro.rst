@@ -11,9 +11,8 @@ Before you get started, please ensure you have the following installed:
 
 - `Git <https://git-scm.com>`_
 - `Python 3 <https://python.org>`_
-- `Poetry <https://python-poetry.org>`_
 - `Docker <https://docker.com>`_
-- Discord Account + App 
+- Discord Account + `App <https://discordpy.readthedocs.io/en/stable/discord.html>`_ 
 
 If you are using Linux, the following dependencies will need to be installed:
 
@@ -41,13 +40,9 @@ Setup
 **Rodhaj only supports Python 3.9 or higher**
 
 .. important::
-    Ensure that you are in the root of the repo throughout this process
-    and have the database running
-
-.. note:: 
-
-   Rodhaj also supports Poetry, but for simplicity,
-   using an virtualenv is shown instead. 
+  - Ensure that you are in the root of the repo throughout this process and have the database running
+    
+  - Rodhaj also supports Poetry, but for simplicity, virtualenvs are demonstrated instead
 
 1. Fork and clone the repo
 
@@ -57,17 +52,15 @@ Setup
 
    python3 -m venv rodhaj
 
-3. Activate virtualenv
+3. Activate the virtualenv
 
 .. code-block:: bash
+  
+  # Linux/MacOS
+  $ source rodhaj/bin/activate
 
-   $ source rodhaj/bin/activate
-
-On Windows, you activate it as shown:
-
-.. code-block:: powershell
-
-   $ rodhaj\Scripts\activate.bat
+  # Windows
+  $ rodhaj/Scripts/activate.bat
 
 4. Install dependencies and set up pre-commit hooks
 
@@ -116,11 +109,11 @@ Using Docker
 If you decide to use Docker to run the local PostgreSQL server, then a
 pre-built Docker Compose file is provided. Setup instructions are as follows:
 
-1. Copy ``envs/docker.env`` to ``docker-compose.env`` within the root of the repo. Modify as appropriate.
+1. Copy ``envs/docker.env`` to ``.env`` within the root of the repo. Modify as appropriate.
 
 .. code-block:: bash
 
-    cp envs/docker.env docker-compose.env
+    cp envs/docker.env .env
 
 2. Run the following command to start the PostgreSQL server
 

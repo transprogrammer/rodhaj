@@ -101,8 +101,7 @@ Pull Request Checklist
 When you create a pull request, please ensure that the following is done:
 
 1. Ensure that you have forked the repository and created a branch from ``main`` with the correct naming conventions as mentioned :ref:`above <Branch Naming Convention>`.
-2. Make sure that you have noted the changes in the ``changelog.md`` file.
-3. Your code is properly formatted and linted (and all workflows are passing).
+2. Your code is properly formatted and linted (and all workflows are passing).
 
 Git Commit Guidelines
 ---------------------
