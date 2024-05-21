@@ -9,6 +9,7 @@ from typing import (
     Union,
     overload,
 )
+import datetime
 
 import asyncpg
 import discord
@@ -125,7 +126,16 @@ class GuildConfig(msgspec.Struct):
         guild = self.bot.get_guild(self.id)
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
-
+class GuildSettings(msgspec.Struct, frozen=True):
+    # Should be postgresql interval types
+    account_age: datetime.timedelta
+    guild_age: datetime.timedelta
+    mention: str = "@here"
+    anon_replies: bool = False
+    anon_reply_without_command: bool = False
+    anon_snippets: bool = False
+    
+    
 class GuildWebhookDispatcher:
     def __init__(self, bot: Rodhaj, guild_id: int):
         self.bot = bot
