@@ -127,13 +127,39 @@ class GuildConfig(msgspec.Struct):
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
 class GuildSettings(msgspec.Struct, frozen=True):
-    # Should be postgresql interval types
-    account_age: datetime.timedelta
-    guild_age: datetime.timedelta
+    account_age: datetime.timedelta = datetime.timedelta(hours=2)
+    guild_age: datetime.timedelta = datetime.timedelta(days=2)
     mention: str = "@here"
     anon_replies: bool = False
     anon_reply_without_command: bool = False
     anon_snippets: bool = False
+    
+    def to_dict(self):
+        return {f: getattr(self, f) for f in self.__struct_fields__}
+    
+class GuildWebhook(msgspec.Struct, frozen=True):
+    bot: Rodhaj
+    id: int
+    category_id: int
+    ticket_channel_id: int
+    logging_channel_id: int
+    logging_broadcast_url: str
+    ticket_broadcast_url: str
+    
+    @property
+    def category_channel(self) -> Optional[discord.CategoryChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.category_id)  # type: ignore
+
+    @property
+    def logging_channel(self) -> Optional[discord.TextChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.logging_channel_id)  # type: ignore
+
+    @property
+    def ticket_channel(self) -> Optional[discord.ForumChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
     
     
 class GuildWebhookDispatcher:
@@ -160,7 +186,7 @@ class GuildWebhookDispatcher:
         )
 
     @alru_cache()
-    async def get_config(self) -> Optional[GuildConfig]:
+    async def get_config(self) -> Optional[GuildWebhook]:
         query = """
         SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url
         FROM guild_config
@@ -168,10 +194,10 @@ class GuildWebhookDispatcher:
         """
         rows = await self.pool.fetchrow(query, self.guild_id)
         if rows is None:
+            self.get_config.cache_invalidate()
             return None
-
-        config = GuildConfig(bot=self.bot, **dict(rows))
-        return config
+        
+        return GuildWebhook(bot=self.bot, **dict(rows))
 
 
 class SetupFlags(commands.FlagConverter):
@@ -207,27 +233,34 @@ class Config(commands.Cog):
     @property
     def display_emoji(self) -> discord.PartialEmoji:
         return discord.PartialEmoji(name="\U0001f6e0")
+    
+    ### Configuration utilities
 
     @alru_cache()
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
-        # Normally using the star is bad practice but...
-        # Since I don't want to write out every single column to select,
-        # we are going to use the star
-        # The guild config roughly maps to it as well
-        query = "SELECT * FROM guild_config WHERE id = $1;"
+        query = """
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix
+        FROM guild_config
+        WHERE id = $1;
+        """
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
+            self.get_guild_config.cache_invalidate(guild_id)
             return None
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
+    
+    @alru_cache()
+    async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
+        query = "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
+        rows = await self.pool.fetchrow(query, guild_id)
+        if rows is None:
+            self.get_guild_settings.cache_invalidate(guild_id)
+            return None
+        return GuildSettings(account_age=rows["account_age"], guild_age=rows["guild_age"], **rows["settings"])
+    
 
-    def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
-        if isinstance(prefixes, str):
-            return f"`{prefixes}`"
-
-        return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
-
-    ### Blocklist Utilities
+    ### Blocklist utilities
 
     async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
         if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
@@ -252,12 +285,20 @@ class Config(commands.Cog):
 
         return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
 
+    ### Prefix utilities
+    
+    def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
+        if isinstance(prefixes, str):
+            return f"`{prefixes}`"
+
+        return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+    
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
     @commands.hybrid_group(name="config")
     async def config(self, ctx: GuildContext) -> None:
-        """Commands to configure, setup, or delete Rodhaj"""
+        """Modifiable configuration layer for Rodhaj"""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
@@ -272,6 +313,7 @@ class Config(commands.Cog):
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
+        guild_settings = GuildSettings()
         config = await dispatcher.get_config()
 
         if (
@@ -394,7 +436,7 @@ class Config(commands.Cog):
             return
 
         query = """
-        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix)
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix, settings)
         VALUES ($1, $2, $3, $4, $5, $6, $7);
         """
         try:
@@ -407,6 +449,7 @@ class Config(commands.Cog):
                 lgc_webhook.url,
                 tc_webhook.url,
                 [],
+                guild_settings.to_dict()
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
