@@ -219,7 +219,7 @@ class SetupFlags(commands.FlagConverter):
 class PrefixConverter(commands.Converter):
     async def convert(self, ctx: GuildContext, argument: str):
         user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
-        if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
+        if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>", "r>")):
             raise commands.BadArgument("That is a reserved prefix already in use.")
         if len(argument) > 100:
             raise commands.BadArgument("That prefix is too long.")
