@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import asyncpg
 import discord
+import orjson
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import Blocklist, GuildWebhookDispatcher
@@ -23,12 +24,10 @@ from libs.utils import (
 from libs.utils.config import RodhajConfig
 from libs.utils.prefix import get_prefix
 from libs.utils.reloader import Reloader
-import msgspec
-import orjson
-import json
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
 
 async def init(conn: asyncpg.Connection):
     # Refer to https://github.com/MagicStack/asyncpg/issues/140#issuecomment-301477123
@@ -37,15 +36,16 @@ async def init(conn: asyncpg.Connection):
 
     def _decode_jsonb(value):
         return orjson.loads(value[1:].decode("utf-8"))
-    
+
     await conn.set_type_codec(
-        'jsonb',
-        schema='pg_catalog',
+        "jsonb",
+        schema="pg_catalog",
         encoder=_encode_jsonb,
         decoder=_decode_jsonb,
-        format='binary',
+        format="binary",
     )
-    
+
+
 class Rodhaj(commands.Bot):
     """Main bot for Rodhaj"""
 

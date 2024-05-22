@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -9,7 +10,6 @@ from typing import (
     Union,
     overload,
 )
-import datetime
 
 import asyncpg
 import discord
@@ -26,6 +26,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -126,6 +127,7 @@ class GuildConfig(msgspec.Struct):
         guild = self.bot.get_guild(self.id)
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
+
 class GuildSettings(msgspec.Struct, frozen=True):
     account_age: datetime.timedelta = datetime.timedelta(hours=2)
     guild_age: datetime.timedelta = datetime.timedelta(days=2)
@@ -133,10 +135,11 @@ class GuildSettings(msgspec.Struct, frozen=True):
     anon_replies: bool = False
     anon_reply_without_command: bool = False
     anon_snippets: bool = False
-    
+
     def to_dict(self):
         return {f: getattr(self, f) for f in self.__struct_fields__}
-    
+
+
 class GuildWebhook(msgspec.Struct, frozen=True):
     bot: Rodhaj
     id: int
@@ -145,7 +148,7 @@ class GuildWebhook(msgspec.Struct, frozen=True):
     logging_channel_id: int
     logging_broadcast_url: str
     ticket_broadcast_url: str
-    
+
     @property
     def category_channel(self) -> Optional[discord.CategoryChannel]:
         guild = self.bot.get_guild(self.id)
@@ -160,8 +163,8 @@ class GuildWebhook(msgspec.Struct, frozen=True):
     def ticket_channel(self) -> Optional[discord.ForumChannel]:
         guild = self.bot.get_guild(self.id)
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
-    
-    
+
+
 class GuildWebhookDispatcher:
     def __init__(self, bot: Rodhaj, guild_id: int):
         self.bot = bot
@@ -196,7 +199,7 @@ class GuildWebhookDispatcher:
         if rows is None:
             self.get_config.cache_invalidate()
             return None
-        
+
         return GuildWebhook(bot=self.bot, **dict(rows))
 
 
@@ -233,7 +236,7 @@ class Config(commands.Cog):
     @property
     def display_emoji(self) -> discord.PartialEmoji:
         return discord.PartialEmoji(name="\U0001f6e0")
-    
+
     ### Configuration utilities
 
     @alru_cache()
@@ -249,16 +252,21 @@ class Config(commands.Cog):
             return None
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
-    
+
     @alru_cache()
     async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
-        query = "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
+        query = (
+            "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
+        )
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
             self.get_guild_settings.cache_invalidate(guild_id)
             return None
-        return GuildSettings(account_age=rows["account_age"], guild_age=rows["guild_age"], **rows["settings"])
-    
+        return GuildSettings(
+            account_age=rows["account_age"],
+            guild_age=rows["guild_age"],
+            **rows["settings"],
+        )
 
     ### Blocklist utilities
 
@@ -286,13 +294,13 @@ class Config(commands.Cog):
         return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
 
     ### Prefix utilities
-    
+
     def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
         if isinstance(prefixes, str):
             return f"`{prefixes}`"
 
         return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
-    
+
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
@@ -449,7 +457,7 @@ class Config(commands.Cog):
                 lgc_webhook.url,
                 tc_webhook.url,
                 [],
-                guild_settings.to_dict()
+                guild_settings.to_dict(),
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
