@@ -5,6 +5,7 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    AsyncIterator,
     NamedTuple,
     Optional,
     Union,
@@ -16,18 +17,20 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, menus
 from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import Embed
 from libs.utils.pages import SimplePages
+from libs.utils.pages.paginator import RoboPages
 from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
 
     from rodhaj import Rodhaj
+
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
@@ -203,6 +206,31 @@ class GuildWebhookDispatcher:
         return GuildWebhook(bot=self.bot, **dict(rows))
 
 
+class ConfigPageSource(menus.AsyncIteratorPageSource):
+    def __init__(self, entries: dict[str, Any], sort: bool):
+        super().__init__(self.config_iterator(entries), per_page=20)
+        self.sort = sort
+
+    async def config_iterator(self, entries: dict[str, Any]) -> AsyncIterator[str]:
+        for key, entry in entries.items():
+            if entry is self.sort or not isinstance(entry, bool):
+                yield f"{key}: {entry}"
+
+    async def format_page(self, menu: ConfigPages, entries: list[str]):
+        pages = []
+        for _, entry in enumerate(entries, start=menu.current_page * self.per_page):
+            pages.append(f"{entry}")
+
+        menu.embed.description = "\n".join(pages)
+        return menu.embed
+
+
+class ConfigPages(RoboPages):
+    def __init__(self, entries: dict[str, Any], *, ctx: GuildContext, sort: bool):
+        super().__init__(ConfigPageSource(entries, sort), ctx=ctx)
+        self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
+
+
 class SetupFlags(commands.FlagConverter):
     ticket_name: Optional[str] = commands.flag(
         name="ticket_name",
@@ -304,20 +332,22 @@ class Config(commands.Cog):
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
-    @commands.hybrid_group(name="config")
-    async def config(self, ctx: GuildContext) -> None:
-        """Modifiable configuration layer for Rodhaj"""
+    @commands.group(name="rodhaj")
+    async def rodhaj(self, ctx: GuildContext) -> None:
+        """Commands for setup/removal of Rodhaj"""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
-    @config.command(name="setup", usage="ticket_name: <str> log_name: <str>")
+    @commands.guild_only()
+    @rodhaj.command(name="setup", usage="ticket_name: <str> log_name: <str>")
     async def setup(self, ctx: GuildContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
 
         You only need to run this once
         """
-        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
@@ -472,11 +502,13 @@ class Config(commands.Cog):
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
 
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
-    @config.command(name="delete")
+    @commands.guild_only()
+    @rodhaj.command(name="delete")
     async def delete(self, ctx: GuildContext) -> None:
         """Permanently deletes Rodhaj channels and tickets."""
-        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
@@ -526,6 +558,32 @@ class Config(commands.Cog):
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
+    @commands.hybrid_group(name="config")
+    async def config(self, ctx: GuildContext) -> None:
+        """Modifiable configuration layer for Rodhaj"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    # TODO: Add an sort option (for sorting through enabled/disabled options)
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="options")
+    async def config_options(self, ctx: GuildContext, sort: bool) -> None:
+        """Shows options for configuration"""
+        guild_settings = await self.get_guild_settings(ctx.guild.id)
+        if guild_settings is None:
+            msg = (
+                "It seems like Rodhaj has not been set up\n"
+                f"If you want to set up Rodhaj, please run `{ctx.prefix or 'r>'}rodhaj setup`"
+            )
+            await ctx.send(msg)
+            return
+
+        pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, sort=sort)
+        await pages.start()
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @config.group(name="prefix", fallback="info")
     async def prefix(self, ctx: GuildContext) -> None:
         """Shows and manages custom prefixes for the guild
@@ -541,6 +599,8 @@ class Config(commands.Cog):
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
         await ctx.send(embed=embed)
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="add")
     @app_commands.describe(prefix="The new prefix to add")
     async def prefix_add(
@@ -550,7 +610,7 @@ class Config(commands.Cog):
         prefixes = await get_prefix(self.bot, ctx.message)
 
         # 2 are the mention prefixes, which are always prepended on the list of prefixes
-        if isinstance(prefixes, list) and len(prefixes) > 12:
+        if isinstance(prefixes, list) and len(prefixes) > 13:
             await ctx.send(
                 "You can not have more than 10 custom prefixes for your server"
             )
@@ -568,6 +628,8 @@ class Config(commands.Cog):
         get_prefix.cache_invalidate(self.bot, ctx.message)
         await ctx.send(f"Added prefix: `{prefix}`")
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="edit")
     @app_commands.describe(
         old="The prefix to edit", new="A new prefix to replace the old"
@@ -595,6 +657,8 @@ class Config(commands.Cog):
         else:
             await ctx.send("The prefix is not in the list of prefixes for your server")
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="delete")
     @app_commands.describe(prefix="The prefix to delete")
     async def prefix_delete(
@@ -634,6 +698,7 @@ class Config(commands.Cog):
         await pages.start()
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
     @blocklist.command(name="add")
     @app_commands.describe(
         entity="The member to add to the blocklist",
@@ -694,6 +759,7 @@ class Config(commands.Cog):
                 await ctx.send(f"{entity.mention} has been blocked")
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
     @blocklist.command(name="remove")
     @app_commands.describe(entity="The member to remove from the blocklist")
     async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
