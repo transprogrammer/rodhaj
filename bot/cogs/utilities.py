@@ -32,7 +32,7 @@ class Utilities(commands.Cog):
 
     def format_commit(self, commit: pygit2.Commit) -> str:
         short, _, _ = commit.message.partition("\n")
-        short_sha2 = commit.hex[0:6]
+        short_sha2 = str(commit.id)[0:6]
         commit_tz = datetime.timezone(
             datetime.timedelta(minutes=commit.commit_time_offset)
         )
@@ -42,7 +42,8 @@ class Utilities(commands.Cog):
 
         # [`hash`](url) message (offset)
         offset = format_dt(commit_time.astimezone(datetime.timezone.utc), "R")
-        return f"[`{short_sha2}`](https://github.com/transprogrammer/rodhaj/commit/{commit.hex}) {short} ({offset})"
+        commit_id = str(commit.id)
+        return f"[`{short_sha2}`](https://github.com/transprogrammer/rodhaj/commit/{commit_id}) {short} ({offset})"
 
     def get_last_commits(self, count: int = 5):
         repo = pygit2.Repository(".git")
