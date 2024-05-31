@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import difflib
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -244,6 +245,56 @@ class SetupFlags(commands.FlagConverter):
     )
 
 
+class ConfigKeyConverter(commands.Converter):
+    def disambiguate(self, argument: str, keys: list[str]) -> str:
+        closest = difflib.get_close_matches(argument, keys)
+        if len(closest) == 0:
+            return "Key not found."
+
+        close_keys = "\n".join(c for c in closest)
+        return f"Key not found. Did you mean...\n{close_keys}"
+
+    async def convert(self, ctx: GuildContext, argument: str) -> str:
+        cog: Optional[Config] = ctx.bot.get_cog("Config")  # type: ignore
+
+        if not cog:
+            raise RuntimeError("Unable to get Config cog")
+
+        if argument not in cog.config_keys:
+            raise commands.BadArgument(self.disambiguate(argument, cog.config_keys))
+
+        return argument
+
+
+class ConfigValueConverter(commands.Converter):
+    async def convert(self, ctx: GuildContext, argument: str) -> str:
+        lowered = argument.lower()
+
+        # we need to check for whether people are silently passing boolean options or not
+        if lowered in [
+            "yes",
+            "y",
+            "true",
+            "t",
+            "1",
+            "enable",
+            "on",
+            "no",
+            "n",
+            "false",
+            "f",
+            "0",
+            "disable",
+            "off",
+        ]:
+            raise commands.BadArgument(
+                f"Please use `{ctx.prefix or 'r>'}config toggle` to enable/disable boolean configuration options instead."
+            )
+
+        # TODO: Parse datetime/mentions here
+        return argument
+
+
 class PrefixConverter(commands.Converter):
     async def convert(self, ctx: GuildContext, argument: str):
         user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
@@ -260,6 +311,14 @@ class Config(commands.Cog):
     def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
         self.pool = self.bot.pool
+        self.config_keys = [
+            "account_age",
+            "guild_age",
+            "mention",
+            "anon_replies",
+            "anon_reply_without_command",
+            "anon_snippets",
+        ]
 
     @property
     def display_emoji(self) -> discord.PartialEmoji:
@@ -581,6 +640,56 @@ class Config(commands.Cog):
 
         pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, sort=sort)
         await pages.start()
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="set")
+    async def config_set(
+        self,
+        ctx: GuildContext,
+        key: Annotated[str, ConfigKeyConverter],
+        *,
+        value: Annotated[str, ConfigValueConverter],
+    ) -> None:
+        """Sets an option for configuration
+
+        If you are looking to toggle an option within the configuration, then please use
+        `config toggle` instead.
+        """
+        if key not in ["account_age", "guild_age", "mention"]:
+            await ctx.send(
+                f"Please use `{ctx.prefix or 'r>'}config toggle` for setting configuration values that are boolean"
+            )
+            return
+
+        await ctx.send(f"{value}")
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="toggle")
+    async def config_toggle(
+        self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter], *, value: bool
+    ) -> None:
+        """Toggles an boolean option for configuration
+
+
+        If you are looking to set an option within the configuration, then please use
+        `config set` instead.
+        """
+        if key in ["account_age", "guild_age", "mention"]:
+            await ctx.send(
+                f"Please use `{ctx.prefix or 'r>'}config set` for setting configuration values that are fixed values"
+            )
+            return
+
+        await ctx.send(f"{value}")
+
+    @config_set.error
+    async def on_config_set_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
