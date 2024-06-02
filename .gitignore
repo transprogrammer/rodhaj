@@ -184,3 +184,6 @@ test-scripts/
 
 # Ruff cache
 .ruff_cache/
+
+# Old files
+old/*

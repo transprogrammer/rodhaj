@@ -4,8 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import discord
 
-from .embeds import ErrorEmbed
-from .errors import produce_error_embed
+from .embeds import ErrorEmbed, FullErrorEmbed
 
 if TYPE_CHECKING:
     from .context import RoboContext
@@ -38,7 +37,7 @@ class RoboView(discord.ui.View):
         /,
     ) -> None:
         await interaction.response.send_message(
-            embed=produce_error_embed(error), ephemeral=True
+            embed=FullErrorEmbed(error), ephemeral=True
         )
         self.stop()
 

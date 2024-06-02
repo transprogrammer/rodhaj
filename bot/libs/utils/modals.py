@@ -3,7 +3,7 @@ from __future__ import annotations
 import discord
 
 from .context import RoboContext
-from .errors import produce_error_embed
+from .embeds import FullErrorEmbed
 
 NO_CONTROL_MSG = "This modal cannot be controlled by you, sorry!"
 
@@ -28,6 +28,6 @@ class RoboModal(discord.ui.Modal):
         self, interaction: discord.Interaction, error: Exception, /
     ) -> None:
         await interaction.response.send_message(
-            embed=produce_error_embed(error), ephemeral=True
+            embed=FullErrorEmbed(error), ephemeral=True
         )
         self.stop()

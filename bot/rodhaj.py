@@ -8,23 +8,20 @@ import asyncpg
 import discord
 from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
-from cogs.config import GuildWebhookDispatcher
+from cogs.config import Blocklist, GuildWebhookDispatcher
+from cogs.ext.prometheus import Metrics
 from discord.ext import commands
 from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.tickets.views import TicketConfirmView
-from libs.utils import (
-    RoboContext,
-    RodhajCommandTree,
-    RodhajHelp,
-    send_error_embed,
-)
+from libs.utils import RoboContext, RodhajCommandTree, RodhajHelp
 from libs.utils.config import RodhajConfig
 from libs.utils.prefix import get_prefix
 from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+    from libs.utils.context import RoboContext
 
 
 class Rodhaj(commands.Bot):
@@ -53,8 +50,10 @@ class Rodhaj(commands.Bot):
             *args,
             **kwargs,
         )
+        self.blocklist = Blocklist(self)
         self.default_prefix = "r>"
         self.logger = logging.getLogger("rodhaj")
+        self.metrics = Metrics(self)
         self.session = session
         self.partial_config: Optional[PartialConfig] = None
         self.pool = pool
@@ -64,6 +63,7 @@ class Rodhaj(commands.Bot):
         )
         self._dev_mode = config.rodhaj.get("dev_mode", False)
         self._reloader = Reloader(self, Path(__file__).parent)
+        self._prometheus = config.rodhaj.get("prometheus", {})
 
     ### Ticket related utils
     async def fetch_partial_config(self) -> Optional[PartialConfig]:
@@ -85,9 +85,24 @@ class Rodhaj(commands.Bot):
         return await super().get_context(origin, cls=cls)
 
     async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
+        self, ctx: RoboContext, error: commands.CommandError
     ) -> None:
-        await send_error_embed(ctx, error)
+        if self._dev_mode:
+            self.logger.exception("Ignoring exception:", exc_info=error)
+            return
+
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.author.send("This command cannot be used in private messages")
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(
+                f"You are missing the following argument(s): {error.param.name}"
+            )
+        elif isinstance(error, commands.CommandInvokeError):
+            original = error.original
+            if not isinstance(original, discord.HTTPException):
+                self.logger.exception("In %s:", ctx.command.qualified_name, exc_info=original)  # type: ignore
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
     ### Ticket processing and handling
 
@@ -120,6 +135,11 @@ class Rodhaj(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         # Ignore all messages from the bot
         if message.author.bot:
+            return
+
+        # Ignore users in the blocklist
+        # Maybe at some point we can process these and send back a result
+        if message.author.id in self.blocklist:
             return
 
         # Since we are already using an RoboContext to deal with process commands,
@@ -205,7 +225,18 @@ class Rodhaj(commands.Bot):
         # Useful for debugging purposes
         await self.load_extension("jishaku")
 
+        await self.blocklist.load()
         self.partial_config = await self.fetch_partial_config()
+
+        if self._prometheus.get("enabled", False):
+            await self.load_extension("cogs.ext.prometheus")
+            prom_host = self._prometheus.get("host", "127.0.0.1")
+            prom_port = self._prometheus.get("port", 8555)
+
+            await self.metrics.start(host=prom_host, port=prom_port)
+            self.logger.info("Prometheus Server started on %s:%s", prom_host, prom_port)
+
+            self.metrics.fill()
 
         if self._dev_mode:
             self.logger.info("Dev mode is enabled. Loading Reloader")

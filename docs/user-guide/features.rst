@@ -45,3 +45,24 @@ Tags
 To aid with frequent responses, tags can be used. Tags do not have an owner associated, thus they can be used and edited by any staff member.
 Tags can be used by using the ``?tag <tag name>`` command, where ``<tag name>`` represents the name of the tag that should be used.
 By default, they are sent directly to the user who is in the ticket, but can be sent internally by using the ``--ns`` flag.
+
+Blocklist
+---------
+
+This feature acts very similar to an block/unblock feature. All blocked users
+as of writing will not get a message from the bot. Planned features with this feature
+include an timer to automatically remove those who are on the blocklist and 
+an history feature to track past incidents.
+
+Prometheus Extension
+--------------------
+
+In order to aid in observability, Rodhaj includes an `Prometheus <https://prometheus.io/>`_ exporter.
+This is included as an extension to Rodhaj, which when used, provides valuable information 
+in regards to usage, and other metrics. This extension is designed primarily to be used in 
+production environments.
+
+.. note::
+
+    Disabling this extension will have no effect
+    on the bot itself.
