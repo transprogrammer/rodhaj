@@ -14,18 +14,14 @@ from discord.ext import commands
 from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
 from libs.tickets.utils import get_cached_thread, get_partial_ticket
 from libs.tickets.views import TicketConfirmView
-from libs.utils import (
-    RoboContext,
-    RodhajCommandTree,
-    RodhajHelp,
-    send_error_embed,
-)
+from libs.utils import RoboContext, RodhajCommandTree, RodhajHelp
 from libs.utils.config import RodhajConfig
 from libs.utils.prefix import get_prefix
 from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+    from libs.utils.context import RoboContext
 
 
 class Rodhaj(commands.Bot):
@@ -89,9 +85,24 @@ class Rodhaj(commands.Bot):
         return await super().get_context(origin, cls=cls)
 
     async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
+        self, ctx: RoboContext, error: commands.CommandError
     ) -> None:
-        await send_error_embed(ctx, error)
+        if self._dev_mode:
+            self.logger.exception("Ignoring exception:", exc_info=error)
+            return
+
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.author.send("This command cannot be used in private messages")
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send(
+                f"You are missing the following argument(s): {error.param.name}"
+            )
+        elif isinstance(error, commands.CommandInvokeError):
+            original = error.original
+            if not isinstance(original, discord.HTTPException):
+                self.logger.exception("In %s:", ctx.command.qualified_name, exc_info=original)  # type: ignore
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
     ### Ticket processing and handling
 
