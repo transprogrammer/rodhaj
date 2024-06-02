@@ -180,6 +180,10 @@ class Admin(commands.Cog, command_attrs=dict(hidden=True)):
 
         await ctx.send(self.format_results(statuses))
 
+    @commands.command(name="test")
+    async def testing(self, ctx: RoboContext) -> None:
+        raise ValueError("hi")
+
 
 async def setup(bot: Rodhaj) -> None:
     await bot.add_cog(Admin(bot))
