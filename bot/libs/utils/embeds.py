@@ -35,11 +35,11 @@ class FullErrorEmbed(ErrorEmbed):
     def _format_description(self, error: Exception) -> str:
         error_traceback = "\n".join(traceback.format_exception_only(type(error), error))
         desc = f"""
-    Uh oh! It seems like there was an issue. Ask the devs for help.
-    
-    **Error**:
-    ```{error_traceback}```
-    """
+        Uh oh! It seems like there was an issue. Ask the devs for help.
+        
+        **Error**:
+        ```{error_traceback}```
+        """
         return desc
 
 
