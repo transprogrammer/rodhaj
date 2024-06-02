@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import difflib
+import itertools
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -136,6 +137,15 @@ class GuildSettings(msgspec.Struct, frozen=True):
     account_age: datetime.timedelta = datetime.timedelta(hours=2)
     guild_age: datetime.timedelta = datetime.timedelta(days=2)
     mention: str = "@here"
+    anon_replies: bool = False
+    anon_reply_without_command: bool = False
+    anon_snippets: bool = False
+
+    def to_dict(self):
+        return {f: getattr(self, f) for f in self.__struct_fields__}
+
+
+class PartialGuildSettings(msgspec.Struct, frozen=True):
     anon_replies: bool = False
     anon_reply_without_command: bool = False
     anon_snippets: bool = False
@@ -354,6 +364,40 @@ class Config(commands.Cog):
             guild_age=rows["guild_age"],
             **rows["settings"],
         )
+
+    @alru_cache()
+    async def get_partial_guild_settings(
+        self, guild_id: int
+    ) -> Optional[PartialGuildSettings]:
+        query = "SELECT settings FROM guild_config WHERE id = $1;"
+        rows = await self.pool.fetchrow(query, guild_id)
+        if rows is None:
+            self.get_partial_guild_settings.cache_invalidate(guild_id)
+            return None
+        return PartialGuildSettings(
+            **rows["settings"],
+        )
+
+    async def set_guild_settings(self, guild_id: int, key: str, value: Any) -> None:
+        current_guild_settings = await self.get_guild_settings(guild_id)
+
+        # If there are no guild configurations, then we have an issue here
+        # we will denote this with an error
+        if not current_guild_settings:
+            raise RuntimeError("Guild settings could not be found")
+
+        query = """
+        UPDATE guild_config
+        SET settings = $2::jsonb
+        WHERE id = $1;
+        """
+        guild_dict = current_guild_settings.to_dict()
+        guild_dict[key] = value
+        encoded = msgspec.json.encode(
+            dict(itertools.islice(guild_dict.items(), 2, len(guild_dict)))
+        )
+        await self.bot.pool.execute(query, guild_id, encoded)
+        self.get_guild_settings.cache_invalidate(guild_id)
 
     ### Blocklist utilities
 
@@ -682,13 +726,40 @@ class Config(commands.Cog):
             )
             return
 
-        await ctx.send(f"{value}")
+        current_guild_settings = await self.get_partial_guild_settings(ctx.guild.id)
+
+        # If there are no guild configurations, then we have an issue here
+        # we will denote this with an error
+        if not current_guild_settings:
+            raise RuntimeError("Guild settings could not be found")
+
+        query = """
+        UPDATE guild_config
+        SET settings = $2::jsonb
+        WHERE id = $1;
+        """
+        guild_dict = current_guild_settings.to_dict()
+        original_value = guild_dict.get(key)
+        guild_dict[key] = value
+        await self.bot.pool.execute(query, ctx.guild.id, guild_dict)
+        self.get_guild_settings.cache_invalidate(ctx.guild.id)
+
+        await ctx.send(f"Toggled `{key}` from `{original_value}` to `{value}`")
 
     @config_set.error
     async def on_config_set_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
         if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
+
+    @config_toggle.error
+    async def on_config_toggle_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
+        else:
             await ctx.send(str(error))
 
     @check_permissions(manage_guild=True)
