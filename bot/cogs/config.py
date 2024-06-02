@@ -25,6 +25,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -241,6 +242,14 @@ class Config(commands.Cog):
             return
 
         return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
+
+    ### Misc Utilities
+    async def _handle_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = CooldownEmbed(error.retry_after)
+            await ctx.send(embed=embed)
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -467,17 +476,13 @@ class Config(commands.Cog):
     async def on_setup_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = CooldownEmbed(error.retry_after)
-            await ctx.send(embed=embed)
+        await self._handle_error(ctx, error)
 
     @delete.error
     async def on_delete_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        if isinstance(error, commands.CommandOnCooldown):
-            embed = CooldownEmbed(error.retry_after)
-            await ctx.send(embed=embed)
+        await self._handle_error(ctx, error)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
