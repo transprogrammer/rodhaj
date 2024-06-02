@@ -19,12 +19,13 @@ from discord.ext import commands
 from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
-from libs.utils.embeds import Embed
+from libs.utils.embeds import CooldownEmbed, Embed
 from libs.utils.pages import SimplePages
 from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 UNKNOWN_ERROR_MESSAGE = (
@@ -462,6 +463,22 @@ class Config(commands.Cog):
             await ctx.send("Not removing Rodhaj channels. Canceling.")
         else:
             await ctx.send("Cancelling.")
+
+    @setup.error
+    async def on_setup_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = CooldownEmbed(error.retry_after)
+            await ctx.send(embed=embed)
+
+    @delete.error
+    async def on_delete_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = CooldownEmbed(error.retry_after)
+            await ctx.send(embed=embed)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()

@@ -14,12 +14,13 @@ from libs.tickets.utils import (
     safe_content,
 )
 from libs.utils.checks import bot_check_permissions
-from libs.utils.embeds import Embed, LoggingEmbed
+from libs.utils.embeds import CooldownEmbed, Embed, LoggingEmbed
 
 from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext, RoboContext
+
     from rodhaj import Rodhaj
 
 
@@ -525,6 +526,14 @@ class Tickets(commands.Cog):
             embed.add_field(name="Owner", value=user.mention)
             embed.add_field(name="Link", value=ticket.mention)
             await webhook.send(embed=embed)
+
+    @reply.error
+    async def on_reply_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ) -> None:
+        if isinstance(error, commands.CommandOnCooldown):
+            embed = CooldownEmbed(error.retry_after)
+            await ctx.send(embed=embed)
 
 
 async def setup(bot: Rodhaj) -> None:
