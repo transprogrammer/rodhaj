@@ -11,7 +11,6 @@ from .embeds import (
     ErrorEmbed as ErrorEmbed,
     LoggingEmbed as LoggingEmbed,
 )
-from .errors import send_error_embed as send_error_embed
 from .handler import KeyboardInterruptHandler as KeyboardInterruptHandler
 from .help import RodhajHelp as RodhajHelp
 from .logger import RodhajLogger as RodhajLogger
