@@ -7,7 +7,6 @@ from discord.ext import commands
 
 if TYPE_CHECKING:
     from libs.utils.context import GuildContext
-
     from rodhaj import Rodhaj
 
 
