@@ -96,6 +96,7 @@ The following SQL queries can be used to create the user and database:
 
     CREATE ROLE rodhaj WITH LOGIN PASSWORD 'somepass';
     CREATE DATABASE rodhaj OWNER rodhaj;
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 .. note::
     
