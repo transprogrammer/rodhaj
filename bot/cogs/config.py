@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import datetime
+import difflib
+import itertools
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    AsyncIterator,
     NamedTuple,
     Optional,
     Union,
@@ -15,17 +19,19 @@ import discord
 import msgspec
 from async_lru import alru_cache
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, menus
 from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
 from libs.utils.checks import bot_check_permissions, check_permissions
 from libs.utils.embeds import CooldownEmbed, Embed
 from libs.utils.pages import SimplePages
+from libs.utils.pages.paginator import RoboPages
 from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
     from rodhaj import Rodhaj
+
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
@@ -126,6 +132,52 @@ class GuildConfig(msgspec.Struct):
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
 
+class GuildSettings(msgspec.Struct, frozen=True):
+    account_age: datetime.timedelta = datetime.timedelta(hours=2)
+    guild_age: datetime.timedelta = datetime.timedelta(days=2)
+    mention: str = "@here"
+    anon_replies: bool = False
+    anon_reply_without_command: bool = False
+    anon_snippets: bool = False
+
+    def to_dict(self):
+        return {f: getattr(self, f) for f in self.__struct_fields__}
+
+
+class PartialGuildSettings(msgspec.Struct, frozen=True):
+    anon_replies: bool = False
+    anon_reply_without_command: bool = False
+    anon_snippets: bool = False
+
+    def to_dict(self):
+        return {f: getattr(self, f) for f in self.__struct_fields__}
+
+
+class GuildWebhook(msgspec.Struct, frozen=True):
+    bot: Rodhaj
+    id: int
+    category_id: int
+    ticket_channel_id: int
+    logging_channel_id: int
+    logging_broadcast_url: str
+    ticket_broadcast_url: str
+
+    @property
+    def category_channel(self) -> Optional[discord.CategoryChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.category_id)  # type: ignore
+
+    @property
+    def logging_channel(self) -> Optional[discord.TextChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.logging_channel_id)  # type: ignore
+
+    @property
+    def ticket_channel(self) -> Optional[discord.ForumChannel]:
+        guild = self.bot.get_guild(self.id)
+        return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
+
+
 class GuildWebhookDispatcher:
     def __init__(self, bot: Rodhaj, guild_id: int):
         self.bot = bot
@@ -150,7 +202,7 @@ class GuildWebhookDispatcher:
         )
 
     @alru_cache()
-    async def get_config(self) -> Optional[GuildConfig]:
+    async def get_config(self) -> Optional[GuildWebhook]:
         query = """
         SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url
         FROM guild_config
@@ -158,10 +210,35 @@ class GuildWebhookDispatcher:
         """
         rows = await self.pool.fetchrow(query, self.guild_id)
         if rows is None:
+            self.get_config.cache_invalidate()
             return None
 
-        config = GuildConfig(bot=self.bot, **dict(rows))
-        return config
+        return GuildWebhook(bot=self.bot, **dict(rows))
+
+
+class ConfigPageSource(menus.AsyncIteratorPageSource):
+    def __init__(self, entries: dict[str, Any], sort: bool):
+        super().__init__(self.config_iterator(entries), per_page=20)
+        self.sort = sort
+
+    async def config_iterator(self, entries: dict[str, Any]) -> AsyncIterator[str]:
+        for key, entry in entries.items():
+            if entry is self.sort or not isinstance(entry, bool):
+                yield f"{key}: {entry}"
+
+    async def format_page(self, menu: ConfigPages, entries: list[str]):
+        pages = []
+        for _, entry in enumerate(entries, start=menu.current_page * self.per_page):
+            pages.append(f"{entry}")
+
+        menu.embed.description = "\n".join(pages)
+        return menu.embed
+
+
+class ConfigPages(RoboPages):
+    def __init__(self, entries: dict[str, Any], *, ctx: GuildContext, sort: bool):
+        super().__init__(ConfigPageSource(entries, sort), ctx=ctx)
+        self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
 
 
 class SetupFlags(commands.FlagConverter):
@@ -177,10 +254,60 @@ class SetupFlags(commands.FlagConverter):
     )
 
 
+class ConfigKeyConverter(commands.Converter):
+    def disambiguate(self, argument: str, keys: list[str]) -> str:
+        closest = difflib.get_close_matches(argument, keys)
+        if len(closest) == 0:
+            return "Key not found."
+
+        close_keys = "\n".join(c for c in closest)
+        return f"Key not found. Did you mean...\n{close_keys}"
+
+    async def convert(self, ctx: GuildContext, argument: str) -> str:
+        cog: Optional[Config] = ctx.bot.get_cog("Config")  # type: ignore
+
+        if not cog:
+            raise RuntimeError("Unable to get Config cog")
+
+        if argument not in cog.config_keys:
+            raise commands.BadArgument(self.disambiguate(argument, cog.config_keys))
+
+        return argument
+
+
+class ConfigValueConverter(commands.Converter):
+    async def convert(self, ctx: GuildContext, argument: str) -> str:
+        lowered = argument.lower()
+
+        # we need to check for whether people are silently passing boolean options or not
+        if lowered in [
+            "yes",
+            "y",
+            "true",
+            "t",
+            "1",
+            "enable",
+            "on",
+            "no",
+            "n",
+            "false",
+            "f",
+            "0",
+            "disable",
+            "off",
+        ]:
+            raise commands.BadArgument(
+                f"Please use `{ctx.prefix or 'r>'}config toggle` to enable/disable boolean configuration options instead."
+            )
+
+        # TODO: Parse datetime/mentions here
+        return argument
+
+
 class PrefixConverter(commands.Converter):
     async def convert(self, ctx: GuildContext, argument: str):
         user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
-        if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>")):
+        if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>", "r>")):
             raise commands.BadArgument("That is a reserved prefix already in use.")
         if len(argument) > 100:
             raise commands.BadArgument("That prefix is too long.")
@@ -193,31 +320,85 @@ class Config(commands.Cog):
     def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
         self.pool = self.bot.pool
+        self.config_keys = [
+            "account_age",
+            "guild_age",
+            "mention",
+            "anon_replies",
+            "anon_reply_without_command",
+            "anon_snippets",
+        ]
 
     @property
     def display_emoji(self) -> discord.PartialEmoji:
         return discord.PartialEmoji(name="\U0001f6e0")
 
+    ### Configuration utilities
+
     @alru_cache()
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
-        # Normally using the star is bad practice but...
-        # Since I don't want to write out every single column to select,
-        # we are going to use the star
-        # The guild config roughly maps to it as well
-        query = "SELECT * FROM guild_config WHERE id = $1;"
+        query = """
+        SELECT id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix
+        FROM guild_config
+        WHERE id = $1;
+        """
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
+            self.get_guild_config.cache_invalidate(guild_id)
             return None
         config = GuildConfig(bot=self.bot, **dict(rows))
         return config
 
-    def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
-        if isinstance(prefixes, str):
-            return f"`{prefixes}`"
+    @alru_cache()
+    async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
+        query = (
+            "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
+        )
+        rows = await self.pool.fetchrow(query, guild_id)
+        if rows is None:
+            self.get_guild_settings.cache_invalidate(guild_id)
+            return None
+        return GuildSettings(
+            account_age=rows["account_age"],
+            guild_age=rows["guild_age"],
+            **rows["settings"],
+        )
 
-        return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+    @alru_cache()
+    async def get_partial_guild_settings(
+        self, guild_id: int
+    ) -> Optional[PartialGuildSettings]:
+        query = "SELECT settings FROM guild_config WHERE id = $1;"
+        rows = await self.pool.fetchrow(query, guild_id)
+        if rows is None:
+            self.get_partial_guild_settings.cache_invalidate(guild_id)
+            return None
+        return PartialGuildSettings(
+            **rows["settings"],
+        )
 
-    ### Blocklist Utilities
+    async def set_guild_settings(self, guild_id: int, key: str, value: Any) -> None:
+        current_guild_settings = await self.get_guild_settings(guild_id)
+
+        # If there are no guild configurations, then we have an issue here
+        # we will denote this with an error
+        if not current_guild_settings:
+            raise RuntimeError("Guild settings could not be found")
+
+        query = """
+        UPDATE guild_config
+        SET settings = $2::jsonb
+        WHERE id = $1;
+        """
+        guild_dict = current_guild_settings.to_dict()
+        guild_dict[key] = value
+        encoded = msgspec.json.encode(
+            dict(itertools.islice(guild_dict.items(), 2, len(guild_dict)))
+        )
+        await self.bot.pool.execute(query, guild_id, encoded)
+        self.get_guild_settings.cache_invalidate(guild_id)
+
+    ### Blocklist utilities
 
     async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
         if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
@@ -242,6 +423,14 @@ class Config(commands.Cog):
 
         return BlocklistTicket(cog=tickets_cog, thread=cached_ticket.thread)
 
+    ### Prefix utilities
+
+    def clean_prefixes(self, prefixes: Union[str, list[str]]) -> str:
+        if isinstance(prefixes, str):
+            return f"`{prefixes}`"
+
+        return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
+
     ### Misc Utilities
     async def _handle_error(
         self, ctx: GuildContext, error: commands.CommandError
@@ -253,23 +442,26 @@ class Config(commands.Cog):
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
-    @commands.hybrid_group(name="config")
-    async def config(self, ctx: GuildContext) -> None:
-        """Commands to configure, setup, or delete Rodhaj"""
+    @commands.group(name="rodhaj")
+    async def rodhaj(self, ctx: GuildContext) -> None:
+        """Commands for setup/removal of Rodhaj"""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
-    @config.command(name="setup", usage="ticket_name: <str> log_name: <str>")
+    @commands.guild_only()
+    @rodhaj.command(name="setup", usage="ticket_name: <str> log_name: <str>")
     async def setup(self, ctx: GuildContext, *, flags: SetupFlags) -> None:
         """First-time setup for Rodhaj
 
         You only need to run this once
         """
-        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
+        guild_settings = GuildSettings()
         config = await dispatcher.get_config()
 
         if (
@@ -392,7 +584,7 @@ class Config(commands.Cog):
             return
 
         query = """
-        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix)
+        INSERT INTO guild_config (id, category_id, ticket_channel_id, logging_channel_id, logging_broadcast_url, ticket_broadcast_url, prefix, settings)
         VALUES ($1, $2, $3, $4, $5, $6, $7);
         """
         try:
@@ -405,6 +597,7 @@ class Config(commands.Cog):
                 lgc_webhook.url,
                 tc_webhook.url,
                 [],
+                guild_settings.to_dict(),
             )
         except asyncpg.UniqueViolationError:
             await ticket_channel.delete(reason=delete_reason)
@@ -419,11 +612,13 @@ class Config(commands.Cog):
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
 
+    @check_permissions(manage_guild=True)
+    @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
-    @config.command(name="delete")
+    @commands.guild_only()
+    @rodhaj.command(name="delete")
     async def delete(self, ctx: GuildContext) -> None:
         """Permanently deletes Rodhaj channels and tickets."""
-        await ctx.defer()
         guild_id = ctx.guild.id
 
         dispatcher = GuildWebhookDispatcher(self.bot, guild_id)
@@ -485,6 +680,109 @@ class Config(commands.Cog):
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
+    @commands.hybrid_group(name="config")
+    async def config(self, ctx: GuildContext) -> None:
+        """Modifiable configuration layer for Rodhaj"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    # TODO: Add an sort option (for sorting through enabled/disabled options)
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="options")
+    async def config_options(self, ctx: GuildContext, sort: bool) -> None:
+        """Shows options for configuration"""
+        guild_settings = await self.get_guild_settings(ctx.guild.id)
+        if guild_settings is None:
+            msg = (
+                "It seems like Rodhaj has not been set up\n"
+                f"If you want to set up Rodhaj, please run `{ctx.prefix or 'r>'}rodhaj setup`"
+            )
+            await ctx.send(msg)
+            return
+
+        pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, sort=sort)
+        await pages.start()
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="set")
+    async def config_set(
+        self,
+        ctx: GuildContext,
+        key: Annotated[str, ConfigKeyConverter],
+        *,
+        value: Annotated[str, ConfigValueConverter],
+    ) -> None:
+        """Sets an option for configuration
+
+        If you are looking to toggle an option within the configuration, then please use
+        `config toggle` instead.
+        """
+        if key not in ["account_age", "guild_age", "mention"]:
+            await ctx.send(
+                f"Please use `{ctx.prefix or 'r>'}config toggle` for setting configuration values that are boolean"
+            )
+            return
+
+        await ctx.send(f"{value}")
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="toggle")
+    async def config_toggle(
+        self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter], *, value: bool
+    ) -> None:
+        """Toggles an boolean option for configuration
+
+
+        If you are looking to set an option within the configuration, then please use
+        `config set` instead.
+        """
+        if key in ["account_age", "guild_age", "mention"]:
+            await ctx.send(
+                f"Please use `{ctx.prefix or 'r>'}config set` for setting configuration values that are fixed values"
+            )
+            return
+
+        current_guild_settings = await self.get_partial_guild_settings(ctx.guild.id)
+
+        # If there are no guild configurations, then we have an issue here
+        # we will denote this with an error
+        if not current_guild_settings:
+            raise RuntimeError("Guild settings could not be found")
+
+        query = """
+        UPDATE guild_config
+        SET settings = $2::jsonb
+        WHERE id = $1;
+        """
+        guild_dict = current_guild_settings.to_dict()
+        original_value = guild_dict.get(key)
+        guild_dict[key] = value
+        await self.bot.pool.execute(query, ctx.guild.id, guild_dict)
+        self.get_guild_settings.cache_invalidate(ctx.guild.id)
+
+        await ctx.send(f"Toggled `{key}` from `{original_value}` to `{value}`")
+
+    @config_set.error
+    async def on_config_set_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
+
+    @config_toggle.error
+    async def on_config_toggle_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
+        else:
+            await ctx.send(str(error))
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @config.group(name="prefix", fallback="info")
     async def prefix(self, ctx: GuildContext) -> None:
         """Shows and manages custom prefixes for the guild
@@ -500,6 +798,8 @@ class Config(commands.Cog):
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
         await ctx.send(embed=embed)
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="add")
     @app_commands.describe(prefix="The new prefix to add")
     async def prefix_add(
@@ -509,7 +809,7 @@ class Config(commands.Cog):
         prefixes = await get_prefix(self.bot, ctx.message)
 
         # 2 are the mention prefixes, which are always prepended on the list of prefixes
-        if isinstance(prefixes, list) and len(prefixes) > 12:
+        if isinstance(prefixes, list) and len(prefixes) > 13:
             await ctx.send(
                 "You can not have more than 10 custom prefixes for your server"
             )
@@ -527,6 +827,8 @@ class Config(commands.Cog):
         get_prefix.cache_invalidate(self.bot, ctx.message)
         await ctx.send(f"Added prefix: `{prefix}`")
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="edit")
     @app_commands.describe(
         old="The prefix to edit", new="A new prefix to replace the old"
@@ -554,6 +856,8 @@ class Config(commands.Cog):
         else:
             await ctx.send("The prefix is not in the list of prefixes for your server")
 
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
     @prefix.command(name="delete")
     @app_commands.describe(prefix="The prefix to delete")
     async def prefix_delete(
@@ -593,6 +897,7 @@ class Config(commands.Cog):
         await pages.start()
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
     @blocklist.command(name="add")
     @app_commands.describe(
         entity="The member to add to the blocklist",
@@ -653,6 +958,7 @@ class Config(commands.Cog):
                 await ctx.send(f"{entity.mention} has been blocked")
 
     @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @commands.guild_only()
     @blocklist.command(name="remove")
     @app_commands.describe(entity="The member to remove from the blocklist")
     async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
