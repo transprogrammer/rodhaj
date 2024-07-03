@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import difflib
 import itertools
+import re
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -30,12 +31,14 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
+MENTION_REGEX = r"<@!?([0-9]+)>"
 
 
 class BlocklistTicket(NamedTuple):
@@ -277,30 +280,24 @@ class ConfigKeyConverter(commands.Converter):
 
 class ConfigValueConverter(commands.Converter):
     async def convert(self, ctx: GuildContext, argument: str) -> str:
+        true_options = ("yes", "y", "true", "t", "1", "enable", "on")
+        false_options = ("no", "n", "false", "f", "0", "disable", "off")
         lowered = argument.lower()
 
         # we need to check for whether people are silently passing boolean options or not
-        if lowered in [
-            "yes",
-            "y",
-            "true",
-            "t",
-            "1",
-            "enable",
-            "on",
-            "no",
-            "n",
-            "false",
-            "f",
-            "0",
-            "disable",
-            "off",
-        ]:
+        if lowered in true_options or lowered in false_options:
             raise commands.BadArgument(
                 f"Please use `{ctx.prefix or 'r>'}config toggle` to enable/disable boolean configuration options instead."
             )
 
-        # TODO: Parse datetime/mentions here
+        # Double check mention regexes
+        # TODO: Somehow parse these mentions and safely store them
+        mention_re = re.compile(MENTION_REGEX)
+        if not mention_re.fullmatch(argument):
+            raise commands.BadArgument(
+                "Invalid mention used. Please use an valid mention instead"
+            )
+        # TODO: Parse datetime timedeltas here
         return argument
 
 
@@ -725,7 +722,23 @@ class Config(commands.Cog):
             )
             return
 
-        await ctx.send(f"{value}")
+        # I'm not joking but this is the only cleanest way I can think of doing this
+        # Noelle 2024
+        if key in "account_age":
+            clause = "SET account_age = $2"
+        elif key in "guild_age":
+            clause = "SET guild_age = $2"
+        else:
+            clause = "SET mention = $2"
+
+        query = f"""
+        UPDATE guild_config
+        {clause}
+        WHERE id = $1;
+        """
+        await self.bot.pool.execute(query, ctx.guild.id, value)
+        self.get_guild_settings.cache_invalidate(ctx.guild.id)
+        await ctx.send(f"Set `{key}` to `{value}`")
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
@@ -752,6 +765,9 @@ class Config(commands.Cog):
         if not current_guild_settings:
             raise RuntimeError("Guild settings could not be found")
 
+        # There is technically an faster method
+        # of directly modifying the subscripted path...
+        # But for the reason of autonomic guarantees, the whole entire dict should be modified
         query = """
         UPDATE guild_config
         SET settings = $2::jsonb
@@ -759,6 +775,10 @@ class Config(commands.Cog):
         """
         guild_dict = current_guild_settings.to_dict()
         original_value = guild_dict.get(key)
+        if original_value and original_value is value:
+            await ctx.send(f"`{key}` is already set to `{value}`!")
+            return
+
         guild_dict[key] = value
         await self.bot.pool.execute(query, ctx.guild.id, guild_dict)
         self.get_guild_settings.cache_invalidate(ctx.guild.id)
@@ -777,8 +797,6 @@ class Config(commands.Cog):
         self, ctx: GuildContext, error: commands.CommandError
     ):
         if isinstance(error, commands.BadArgument):
-            await ctx.send(str(error))
-        else:
             await ctx.send(str(error))
 
     @check_permissions(manage_guild=True)
