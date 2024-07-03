@@ -31,13 +31,14 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
-MENTION_REGEX = r"<@!?([0-9]+)>"
+MENTION_REGEX = r"<@!?([\d]+)>"
 
 
 class BlocklistTicket(NamedTuple):
