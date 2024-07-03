@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import difflib
-import itertools
 import re
 from typing import (
     TYPE_CHECKING,
@@ -31,6 +30,7 @@ from libs.utils.prefix import get_prefix
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -347,9 +347,7 @@ class Config(commands.Cog):
 
     @alru_cache()
     async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
-        query = (
-            "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
-        )
+        query = "SELECT account_age, guild_age, mention, settings FROM guild_config WHERE id = $1;"
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
             self.get_guild_settings.cache_invalidate(guild_id)
@@ -357,6 +355,7 @@ class Config(commands.Cog):
         return GuildSettings(
             account_age=rows["account_age"],
             guild_age=rows["guild_age"],
+            mention=rows["mention"],
             **rows["settings"],
         )
 
@@ -372,27 +371,6 @@ class Config(commands.Cog):
         return PartialGuildSettings(
             **rows["settings"],
         )
-
-    async def set_guild_settings(self, guild_id: int, key: str, value: Any) -> None:
-        current_guild_settings = await self.get_guild_settings(guild_id)
-
-        # If there are no guild configurations, then we have an issue here
-        # we will denote this with an error
-        if not current_guild_settings:
-            raise RuntimeError("Guild settings could not be found")
-
-        query = """
-        UPDATE guild_config
-        SET settings = $2::jsonb
-        WHERE id = $1;
-        """
-        guild_dict = current_guild_settings.to_dict()
-        guild_dict[key] = value
-        encoded = msgspec.json.encode(
-            dict(itertools.islice(guild_dict.items(), 2, len(guild_dict)))
-        )
-        await self.bot.pool.execute(query, guild_id, encoded)
-        self.get_guild_settings.cache_invalidate(guild_id)
 
     ### Blocklist utilities
 
