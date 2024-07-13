@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional, Union
 import asyncpg.exceptions
 import discord
 from discord.ext import commands
-
 from libs.snippets.model import create_snippet, get_snippet
 from libs.snippets.views import SnippetPreCreationConfirmationView
 
@@ -69,15 +68,15 @@ class Snippets(commands.Cog):
     @commands.guild_only()
     @snippet.command()
     async def new(
-            self,
-            ctx: GuildContext,
-            name: str,
-            *,
-            content: Optional[str] = None,
+        self,
+        ctx: GuildContext,
+        name: str,
+        *,
+        content: Optional[str] = None,
     ):
         if (
-                await get_snippet(self.pool, ctx.guild.id, ctx.message.author.id, name)
-                is not None
+            await get_snippet(self.pool, ctx.guild.id, ctx.message.author.id, name)
+            is not None
         ):
             await ctx.send(
                 content=f"Snippet `{name}` already exists!",
@@ -173,12 +172,12 @@ class Snippets(commands.Cog):
 
     @commands.Cog.listener()
     async def on_snippet_create(
-            self,
-            guild: discord.Guild,
-            creator: Union[discord.User, discord.Member],
-            snippet_name: str,
-            snippet_text: str,
-            response_context: GuildContext,
+        self,
+        guild: discord.Guild,
+        creator: Union[discord.User, discord.Member],
+        snippet_name: str,
+        snippet_text: str,
+        response_context: GuildContext,
     ):
         try:
             await create_snippet(

@@ -1,6 +1,5 @@
-from libs.utils import RoboView, GuildContext
 import discord.ui
-
+from libs.utils import GuildContext, RoboView
 from rodhaj import Rodhaj
 
 
@@ -8,7 +7,7 @@ class SnippetCreationModal(discord.ui.Modal, title="Editing Snippet"):
     content = discord.ui.TextInput(
         label="Snippet message",
         placeholder="Call me Ishmael. Some years ago—never mind "
-                    + "how long precisely...",
+        + "how long precisely...",
         style=discord.TextStyle.paragraph,
     )
 
@@ -41,7 +40,7 @@ class SnippetPreCreationConfirmationView(discord.ui.View):
 
     @discord.ui.button(label="Create Snippet", style=discord.ButtonStyle.green)
     async def create_snippet(
-            self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         if interaction.user.id != self._ctx.author.id:
             return

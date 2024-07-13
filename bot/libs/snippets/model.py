@@ -4,13 +4,12 @@ import asyncpg.pool
 
 SnippetHeader = namedtuple(
     "SnippetHeader",
-    ["id", "name", "content", "uses", "owner_id", "location_id",
-     "created_at"]
+    ["id", "name", "content", "uses", "owner_id", "location_id", "created_at"],
 )
 
 
 async def get_snippet(
-        pool: asyncpg.pool.Pool, guild_id: int, owner_id: int, snippet_name: str
+    pool: asyncpg.pool.Pool, guild_id: int, owner_id: int, snippet_name: str
 ):
     fields_str = ",".join(SnippetHeader._fields)
     query = f"""
@@ -24,13 +23,14 @@ async def get_snippet(
 
 
 async def create_snippet(
-        pool: asyncpg.pool.Pool, guild_id: int, owner_id: int, snippet_name: str,
-        snippet_text: str
+    pool: asyncpg.pool.Pool,
+    guild_id: int,
+    owner_id: int,
+    snippet_name: str,
+    snippet_text: str,
 ):
     query = """
         INSERT INTO snippets (owner_id, location_id, name, content)
         VALUES ($1, $2, $3, $4)
         """
-    await pool.execute(
-        query, guild_id, owner_id, snippet_name, snippet_text
-    )
+    await pool.execute(query, guild_id, owner_id, snippet_name, snippet_text)
