@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
+import asyncpg.exceptions
 import discord
 from discord.ext import commands
+
+from libs.snippets.model import create_snippet, get_snippet
+from libs.snippets.views import SnippetPreCreationConfirmationView
 
 if TYPE_CHECKING:
     from libs.utils.context import GuildContext
@@ -64,8 +68,41 @@ class Snippets(commands.Cog):
     # TODO: Run all str inputs through custom converters
     @commands.guild_only()
     @snippet.command()
-    async def new(self, ctx, name: str, *, content: Optional[str] = None):
-        await ctx.send("placeholder for snippet new")
+    async def new(
+            self,
+            ctx: GuildContext,
+            name: str,
+            *,
+            content: Optional[str] = None,
+    ):
+        if (
+                await get_snippet(self.pool, ctx.guild.id, ctx.message.author.id, name)
+                is not None
+        ):
+            await ctx.send(
+                content=f"Snippet `{name}` already exists!",
+            )
+            return
+
+        if not content:
+            timeout = 15
+            confirmation_view = SnippetPreCreationConfirmationView(
+                self.bot, ctx, name, timeout
+            )
+            await ctx.reply(
+                content=f"Create snippet with id `{name}`?",
+                view=confirmation_view,
+                delete_after=timeout,
+            )
+        else:
+            self.bot.dispatch(
+                "snippet_create",
+                ctx.guild,
+                ctx.message.author,
+                name,
+                content,
+                ctx,
+            )
 
     @commands.guild_only()
     @snippet.command(name="list")
@@ -111,7 +148,6 @@ class Snippets(commands.Cog):
         WHERE name = $1
         RETURNING name
         """
-
         result = await self.pool.fetchrow(query, name, content)
         if result is None:
             await ctx.reply(
@@ -134,6 +170,27 @@ class Snippets(commands.Cog):
                 ),
                 ephemeral=True,
             )
+
+    @commands.Cog.listener()
+    async def on_snippet_create(
+            self,
+            guild: discord.Guild,
+            creator: Union[discord.User, discord.Member],
+            snippet_name: str,
+            snippet_text: str,
+            response_context: GuildContext,
+    ):
+        try:
+            await create_snippet(
+                self.pool, guild.id, creator.id, snippet_name, snippet_text
+            )
+            if response_context:
+                await response_context.send(
+                    "Snippet created successfully", delete_after=5
+                )
+        except asyncpg.exceptions.UniqueViolationError:
+            if response_context:
+                await response_context.send("Snippet already exists", delete_after=5)
 
 
 async def setup(bot: Rodhaj):
