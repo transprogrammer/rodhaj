@@ -37,8 +37,8 @@ class Snippets(commands.Cog):
     async def remove(self, ctx: GuildContext, name: str):
         query = """
         DELETE FROM snippets
-        WHERE guild_id = $1 AND name = $2
-        RETURNING name
+        WHERE name = $2
+        RETURNING id
         """
         result = await self.pool.fetchrow(query, ctx.guild.id, name)
         if result is None:
@@ -79,9 +79,9 @@ class Snippets(commands.Cog):
     async def show(self, ctx: GuildContext, name: str):
         query = """
         SELECT content FROM snippets
-        WHERE guild_id = $1 AND name = $2
+        WHERE name = $1
         """
-        data = await self.pool.fetchrow(query, ctx.guild.id, name)
+        data = await self.pool.fetchrow(query, name)
         if data is None:
             ret_embed = discord.Embed(
                 title="Oops...",
@@ -107,12 +107,12 @@ class Snippets(commands.Cog):
             return
         query = """
         UPDATE snippets
-        SET content = $3
-        WHERE guild_id = $1 AND name = $2
+        SET content = $2
+        WHERE name = $1
         RETURNING name
         """
 
-        result = await self.pool.fetchrow(query, ctx.guild.id, name, content)
+        result = await self.pool.fetchrow(query, name, content)
         if result is None:
             await ctx.reply(
                 embed=discord.Embed(
