@@ -27,3 +27,11 @@ Contributions to Rodhaj are always welcomed. These could be as small as
 changing documentation to adding new features. If you are interested to start
 the process, please consult the [contributing guidelines](.github/CONTRIBUTING.md) before
 you get started.
+
+## Privacy Policy and Terms of Service
+
+Discord requires us to make one of these.
+
+There isn't anything to note, as no personal data is stored.
+If you doubt this is the case, then read the source code.
+
