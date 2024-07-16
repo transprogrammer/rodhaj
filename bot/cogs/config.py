@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import difflib
-import re
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -288,7 +287,7 @@ class ConfigValueConverter(commands.Converter):
             )
 
         # TODO: Parse datetime timedeltas here
-            
+
         return argument
 
 
@@ -690,14 +689,13 @@ class Config(commands.Cog):
                 f"Please use `{ctx.prefix or 'r>'}config toggle` for setting configuration values that are boolean"
             )
             return
-        
+
         # I'm not joking but this is the only cleanest way I can think of doing this
         # Noelle 2024
         if key in "account_age":
             clause = "SET account_age = $2"
         else:
             clause = "SET guild_age = $2"
-            
 
         query = f"""
         UPDATE guild_config
