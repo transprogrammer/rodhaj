@@ -32,4 +32,4 @@ you get started.
 
 Discord requires us to make one of these.
 
-There isn't anything to note, as no personal data is stored.
+No personal data is stored, and nothing else to note.
