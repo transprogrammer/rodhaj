@@ -30,6 +30,4 @@ you get started.
 
 ## Privacy Policy and Terms of Service
 
-Discord requires us to make one of these.
-
-No personal data is stored, and nothing else to note.
+Discord requires us to make one of these. No personal data is stored, and nothing else to note.
