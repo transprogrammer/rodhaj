@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
-MENTION_REGEX = r"<@!?([\d]+)>"
 
 
 class BlocklistTicket(NamedTuple):
@@ -288,14 +287,8 @@ class ConfigValueConverter(commands.Converter):
                 f"Please use `{ctx.prefix or 'r>'}config toggle` to enable/disable boolean configuration options instead."
             )
 
-        # Double check mention regexes
-        # TODO: Somehow parse these mentions and safely store them
-        mention_re = re.compile(MENTION_REGEX)
-        if not mention_re.fullmatch(argument):
-            raise commands.BadArgument(
-                "Invalid mention used. Please use an valid mention instead"
-            )
         # TODO: Parse datetime timedeltas here
+            
         return argument
 
 
@@ -692,20 +685,19 @@ class Config(commands.Cog):
         If you are looking to toggle an option within the configuration, then please use
         `config toggle` instead.
         """
-        if key not in ["account_age", "guild_age", "mention"]:
+        if key not in ["account_age", "guild_age"]:
             await ctx.send(
                 f"Please use `{ctx.prefix or 'r>'}config toggle` for setting configuration values that are boolean"
             )
             return
-
+        
         # I'm not joking but this is the only cleanest way I can think of doing this
         # Noelle 2024
         if key in "account_age":
             clause = "SET account_age = $2"
-        elif key in "guild_age":
-            clause = "SET guild_age = $2"
         else:
-            clause = "SET mention = $2"
+            clause = "SET guild_age = $2"
+            
 
         query = f"""
         UPDATE guild_config

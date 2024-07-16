@@ -7,7 +7,6 @@
 -- So these needs to be separate columns
 ALTER TABLE IF EXISTS guild_config ADD COLUMN account_age INTERVAL DEFAULT ('2 hours'::interval) NOT NULL;
 ALTER TABLE IF EXISTS guild_config ADD COLUMN guild_age INTERVAL DEFAULT ('2 days':: interval) NOT NULL;
-ALTER TABLE IF EXISTS guild_config ADD COLUMN mention TEXT;
 
 -- The guild settings is just an jsonb column that stores extra settings for the guild.
 -- Misc settings like enabling an certain feature, etc.
