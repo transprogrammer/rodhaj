@@ -33,5 +33,3 @@ you get started.
 Discord requires us to make one of these.
 
 There isn't anything to note, as no personal data is stored.
-If you doubt this is the case, then read the source code.
-
