@@ -7,6 +7,7 @@ from typing import (
     Annotated,
     Any,
     AsyncIterator,
+    Literal,
     NamedTuple,
     Optional,
     Union,
@@ -26,9 +27,11 @@ from libs.utils.embeds import CooldownEmbed, Embed
 from libs.utils.pages import SimplePages
 from libs.utils.pages.paginator import RoboPages
 from libs.utils.prefix import get_prefix
+from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -668,6 +671,37 @@ class Config(commands.Cog):
 
         pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, sort=sort)
         await pages.start()
+
+    @check_permissions(manage_guild=True)
+    @commands.guild_only()
+    @config.command(name="set-age")
+    async def config_set_age(
+        self,
+        ctx: GuildContext,
+        type: Literal["guild", "account"],
+        *,
+        duration: Annotated[
+            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
+        ],
+    ) -> None:
+        """Sets an minium duration for age-related options
+
+        This command handles all age-related options. This means you can use this
+        to set the minimum age required to use Rodhaj
+        """
+        if type in "guild":
+            clause = "SET guild_age = $2"
+        else:
+            clause = "SET account_age = $2"
+
+        query = f"""
+        UPDATE guild_config
+        {clause}
+        WHERE id = $1;
+        """
+        await self.bot.pool.execute(query, ctx.guild.id, duration.td)
+        self.get_guild_settings.cache_invalidate(ctx.guild.id)
+        await ctx.send(f"Set `{type}_age` to `{duration.td}`")
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
