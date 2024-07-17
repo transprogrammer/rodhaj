@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import difflib
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -31,6 +32,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -107,6 +109,11 @@ class Blocklist:
         self._blocklist = blocklist
 
 
+class ConfigType(Enum):
+    TOGGLE = 0
+    SET = 1
+
+
 # Msgspec Structs are usually extremely fast compared to slotted classes
 class GuildConfig(msgspec.Struct):
     bot: Rodhaj
@@ -146,6 +153,7 @@ class GuildSettings(msgspec.Struct, frozen=True):
 
 
 class PartialGuildSettings(msgspec.Struct, frozen=True):
+    mention: str = "@here"
     anon_replies: bool = False
     anon_reply_without_command: bool = False
     anon_snippets: bool = False
@@ -317,6 +325,11 @@ class Config(commands.Cog):
             "anon_reply_without_command",
             "anon_snippets",
         ]
+        self.settings_keys = [
+            "anon_replies",
+            "anon_reply_without_command",
+            "anon_snippets",
+        ]
 
     @property
     def display_emoji(self) -> discord.PartialEmoji:
@@ -340,7 +353,9 @@ class Config(commands.Cog):
 
     @alru_cache()
     async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
-        query = "SELECT account_age, guild_age, mention, settings FROM guild_config WHERE id = $1;"
+        query = (
+            "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
+        )
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
             self.get_guild_settings.cache_invalidate(guild_id)
@@ -348,7 +363,6 @@ class Config(commands.Cog):
         return GuildSettings(
             account_age=rows["account_age"],
             guild_age=rows["guild_age"],
-            mention=rows["mention"],
             **rows["settings"],
         )
 
@@ -364,6 +378,48 @@ class Config(commands.Cog):
         return PartialGuildSettings(
             **rows["settings"],
         )
+
+    async def set_guild_settings(
+        self,
+        key: str,
+        value: Union[str, bool],
+        *,
+        config_type: ConfigType,
+        ctx: GuildContext,
+    ):
+        current_guild_settings = await self.get_partial_guild_settings(ctx.guild.id)
+
+        # If there are no guild configurations, then we have an issue here
+        # we will denote this with an error
+        if not current_guild_settings:
+            raise RuntimeError("Guild settings could not be found")
+
+        # There is technically an faster method
+        # of directly modifying the subscripted path...
+        # But for the reason of autonomic guarantees, the whole entire dict should be modified
+        query = """
+        UPDATE guild_config
+        SET settings = $2::jsonb
+        WHERE id = $1;
+        """
+        guild_dict = current_guild_settings.to_dict()
+        original_value = guild_dict.get(key)
+        if original_value and original_value is value:
+            await ctx.send(f"`{key}` is already set to `{value}`!")
+            return
+
+        guild_dict[key] = value
+        await self.bot.pool.execute(query, ctx.guild.id, guild_dict)
+        self.get_partial_guild_settings.cache_invalidate(ctx.guild.id)
+
+        command_type = "Toggled" if config_type == ConfigType.TOGGLE else "Set"
+        await ctx.send(f"{command_type} `{key}` from `{original_value}` to `{value}`")
+
+    async def _handle_config_error(
+        self, error: commands.CommandError, ctx: GuildContext
+    ) -> None:
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
     ### Blocklist utilities
 
@@ -692,7 +748,6 @@ class Config(commands.Cog):
             clause = "SET guild_age = $2"
         else:
             clause = "SET account_age = $2"
-
         query = f"""
         UPDATE guild_config
         {clause}
@@ -717,27 +772,18 @@ class Config(commands.Cog):
         If you are looking to toggle an option within the configuration, then please use
         `config toggle` instead.
         """
-        if key not in ["account_age", "guild_age"]:
+        if key in ["account_age", "guild_age"]:
             await ctx.send(
-                f"Please use `{ctx.prefix or 'r>'}config toggle` for setting configuration values that are boolean"
+                "Please use `config set-age` for setting configuration values that are related with ages"
+            )
+            return
+        elif key not in "mention":
+            await ctx.send(
+                "Please use `config toggle` for setting configuration values that are boolean"
             )
             return
 
-        # I'm not joking but this is the only cleanest way I can think of doing this
-        # Noelle 2024
-        if key in "account_age":
-            clause = "SET account_age = $2"
-        else:
-            clause = "SET guild_age = $2"
-
-        query = f"""
-        UPDATE guild_config
-        {clause}
-        WHERE id = $1;
-        """
-        await self.bot.pool.execute(query, ctx.guild.id, value)
-        self.get_guild_settings.cache_invalidate(ctx.guild.id)
-        await ctx.send(f"Set `{key}` to `{value}`")
+        await self.set_guild_settings(key, value, config_type=ConfigType.SET, ctx=ctx)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
@@ -751,52 +797,38 @@ class Config(commands.Cog):
         If you are looking to set an option within the configuration, then please use
         `config set` instead.
         """
-        if key in ["account_age", "guild_age", "mention"]:
+        if key in ["account_age", "guild_age"]:
             await ctx.send(
-                f"Please use `{ctx.prefix or 'r>'}config set` for setting configuration values that are fixed values"
+                f"Please use `{ctx.prefix or 'r>'}config set-age` for setting configuration values that are fixed values"
+            )
+            return
+        elif key in "mention":
+            await ctx.send(
+                "Please use `config set` for setting configuration values that require a set value"
             )
             return
 
-        current_guild_settings = await self.get_partial_guild_settings(ctx.guild.id)
+        await self.set_guild_settings(
+            key, value, config_type=ConfigType.TOGGLE, ctx=ctx
+        )
 
-        # If there are no guild configurations, then we have an issue here
-        # we will denote this with an error
-        if not current_guild_settings:
-            raise RuntimeError("Guild settings could not be found")
-
-        # There is technically an faster method
-        # of directly modifying the subscripted path...
-        # But for the reason of autonomic guarantees, the whole entire dict should be modified
-        query = """
-        UPDATE guild_config
-        SET settings = $2::jsonb
-        WHERE id = $1;
-        """
-        guild_dict = current_guild_settings.to_dict()
-        original_value = guild_dict.get(key)
-        if original_value and original_value is value:
-            await ctx.send(f"`{key}` is already set to `{value}`!")
-            return
-
-        guild_dict[key] = value
-        await self.bot.pool.execute(query, ctx.guild.id, guild_dict)
-        self.get_guild_settings.cache_invalidate(ctx.guild.id)
-
-        await ctx.send(f"Toggled `{key}` from `{original_value}` to `{value}`")
+    @config_set_age.error
+    async def on_config_set_age_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        await self._handle_config_error(error, ctx)
 
     @config_set.error
     async def on_config_set_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(str(error))
+        await self._handle_config_error(error, ctx)
 
     @config_toggle.error
     async def on_config_toggle_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(str(error))
+        await self._handle_config_error(error, ctx)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import datetime
-import logging
 import re
 from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
 
 import parsedatetime as pdt
 from dateutil.relativedelta import relativedelta
-from discord import app_commands
 from discord.ext import commands
 
 # Monkey patch mins and secs into the units
@@ -171,29 +169,6 @@ class ShortTime:
         return cls(argument, now=ctx.message.created_at, tzinfo=datetime.timezone.utc)
 
 
-class RelativeDelta(app_commands.Transformer, commands.Converter):
-    @classmethod
-    def __do_conversion(cls, argument: str) -> relativedelta:
-        match = ShortTime.compiled.fullmatch(argument)
-        if match is None or not match.group(0):
-            raise ValueError("invalid time provided")
-
-        data = {k: int(v) for k, v in match.groupdict(default=0).items()}
-        return relativedelta(**data)  # type: ignore
-
-    async def convert(self, ctx: RoboContext, argument: str) -> relativedelta:
-        try:
-            return self.__do_conversion(argument)
-        except ValueError as e:
-            raise commands.BadArgument(str(e)) from None
-
-    async def transform(self, interaction, value: str) -> relativedelta:
-        try:
-            return self.__do_conversion(value)
-        except ValueError as e:
-            raise app_commands.AppCommandError(str(e)) from None
-
-
 class HumanTime:
     calendar = pdt.Calendar(version=pdt.VERSION_CONTEXT_STYLE)
 
@@ -206,12 +181,12 @@ class HumanTime:
     ):
         now = now or datetime.datetime.now(tzinfo)
         dt, status = self.calendar.parseDT(argument, sourceTime=now, tzinfo=None)
-        if not status.hasDateOrTime:
+        if not status.hasDateOrTime:  # type: ignore (not much I could do here...)
             raise commands.BadArgument(
                 'invalid time provided, try e.g. "tomorrow" or "3 days"'
             )
 
-        if not status.hasTime:
+        if not status.hasTime:  # type: ignore
             # replace it with the current time
             dt = dt.replace(
                 hour=now.hour,
@@ -261,37 +236,18 @@ class FutureTime(Time):
             raise commands.BadArgument("this time is in the past")
 
 
-class BadTimeTransform(app_commands.AppCommandError):
-    pass
-
-
-class TimeTransformer(app_commands.Transformer):
-    async def transform(self, interaction, value: str) -> datetime.datetime:
-        tzinfo = datetime.timezone.utc
-        now = interaction.created_at.astimezone(tzinfo)
-        try:
-            short = ShortTime(value, now=now, tzinfo=tzinfo)
-        except commands.BadArgument:
-            try:
-                human = FutureTime(value, now=now, tzinfo=tzinfo)
-            except commands.BadArgument as e:
-                raise BadTimeTransform(str(e)) from None
-            else:
-                return human.dt
-        else:
-            return short.dt
-
-
 class FriendlyTimeResult:
     dt: datetime.datetime
+    td: datetime.timedelta
     arg: str
 
-    __slots__ = ("dt", "td", "arg")
+    __slots__ = ("dt", "now", "td", "arg")
 
-    def __init__(self, dt: datetime.datetime, td: Optional[datetime.timedelta] = None):
+    def __init__(self, dt: datetime.datetime, now: datetime.datetime):
         self.dt = dt
-        self.td = td
         self.arg = ""
+
+        self.td = dt.replace(microsecond=0) - now.replace(microsecond=0)
 
     async def ensure_constraints(
         self,
@@ -340,13 +296,11 @@ class UserFriendlyTime(commands.Converter):
         tzinfo = datetime.timezone.utc
 
         match = regex.match(argument)
-        logger = logging.getLogger("rodhaj")
-        logger.info(f"Current Match: {match}")
         if match is not None and match.group(0):
             data = {k: int(v) for k, v in match.groupdict(default=0).items()}
             remaining = argument[match.end() :].strip()
             dt = now + relativedelta(**data)  # type: ignore
-            result = FriendlyTimeResult(dt.astimezone(tzinfo))
+            result = FriendlyTimeResult(dt.astimezone(tzinfo), now)
             await result.ensure_constraints(ctx, self, now, remaining)
             return result
 
@@ -356,7 +310,8 @@ class UserFriendlyTime(commands.Converter):
                 result = FriendlyTimeResult(
                     datetime.datetime.fromtimestamp(
                         int(match.group("ts")), tz=datetime.timezone.utc
-                    ).astimezone(tzinfo)
+                    ).astimezone(tzinfo),
+                    now,
                 )
                 remaining = argument[match.end() :].strip()
                 await result.ensure_constraints(ctx, self, now, remaining)
@@ -381,7 +336,7 @@ class UserFriendlyTime(commands.Converter):
         # foo date time
 
         # first the first two cases:
-        dt, status, begin, end, dt_string = elements[0]
+        dt, status, begin, end, _ = elements[0]
 
         if not status.hasDateOrTime:
             raise commands.BadArgument(
@@ -414,7 +369,7 @@ class UserFriendlyTime(commands.Converter):
         if status.accuracy == pdt.pdtContext.ACU_HALFDAY:
             dt = dt + datetime.timedelta(days=1)
 
-        result = FriendlyTimeResult(dt)
+        result = FriendlyTimeResult(dt, now)
         remaining = ""
 
         if begin in (0, 1):
