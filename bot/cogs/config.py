@@ -32,6 +32,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -294,8 +295,6 @@ class ConfigValueConverter(commands.Converter):
             raise commands.BadArgument(
                 f"Please use `{ctx.prefix or 'r>'}config toggle` to enable/disable boolean configuration options instead."
             )
-
-        # TODO: Parse datetime timedeltas here
 
         return argument
 
