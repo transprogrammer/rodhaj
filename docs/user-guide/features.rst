@@ -66,3 +66,20 @@ production environments.
 
     Disabling this extension will have no effect
     on the bot itself.
+
+Minimum Guild and Account Ages
+------------------------------
+
+By default, only guilds (aka discord servers) that are older than 2 hours,
+and accounts that joined the server 2 days ago can use Rodhaj. This provides
+a check to prevent spam and abuse, and can be customized within the configuration
+settings. In order to override the default configurations, you can use ``?config set-age``
+in order to update these settings
+
+In-depth Configuration System
+-----------------------------
+
+Rodhaj offers a in-depth configuration system, which is handled and stored
+in the database. You can toggle various settings, including whether to enable
+anonymous replies, set default mentions for posts, and others. More will be included
+in the future.
