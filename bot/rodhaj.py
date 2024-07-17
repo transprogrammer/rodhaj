@@ -21,6 +21,7 @@ from libs.utils.prefix import get_prefix
 from libs.utils.reloader import Reloader
 
 if TYPE_CHECKING:
+    from cogs.config import Config
     from cogs.tickets import Tickets
     from libs.utils.context import RoboContext
 
@@ -187,6 +188,7 @@ class Rodhaj(commands.Bot):
                     return
 
                 tickets_cog: Tickets = self.get_cog("Tickets")  # type: ignore
+                config_cog: Config = self.get_cog("Config")  # type: ignore
                 default_tags = ReservedTags(
                     question=False, serious=False, private=False
                 )
@@ -211,7 +213,13 @@ class Rodhaj(commands.Bot):
                 )
 
                 view = TicketConfirmView(
-                    message.attachments, self, ctx, tickets_cog, message.content, guild
+                    message.attachments,
+                    self,
+                    ctx,
+                    tickets_cog,
+                    config_cog,
+                    message.content,
+                    guild,
                 )
                 view.message = await author.send(embed=embed, view=view)
                 return

@@ -13,6 +13,7 @@ from .utils import register_user, safe_content
 if TYPE_CHECKING:
     from libs.utils.context import RoboContext
 
+    from bot.cogs.config import Config
     from bot.cogs.tickets import Tickets
     from bot.rodhaj import Rodhaj
 
@@ -133,6 +134,7 @@ class TicketConfirmView(RoboView):
         bot: Rodhaj,
         ctx: RoboContext,
         cog: Tickets,
+        config_cog: Config,
         content: str,
         guild: discord.Guild,
         delete_after: bool = True,
@@ -142,6 +144,7 @@ class TicketConfirmView(RoboView):
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
+        self.config_cog = config_cog
         self.content = content
         self.guild = guild
         self.delete_after = delete_after
@@ -228,6 +231,14 @@ class TicketConfirmView(RoboView):
 
         applied_tags = [k for k, v in tags.items() if v is True]
 
+        guild_settings = await self.config_cog.get_partial_guild_settings(self.guild.id)
+
+        if not guild_settings:
+            await interaction.response.send_message(
+                "Unable to find guild settings", ephemeral=True
+            )
+            return
+
         if not status.title.is_set() or not status.tags.is_set():
             dict_status = {"title": status.title, "tags": status.tags}
             formatted_status = "\n".join(
@@ -255,6 +266,7 @@ class TicketConfirmView(RoboView):
             title=title,
             user=author,
             location_id=self.guild.id,
+            mention=guild_settings.mention,
             content=self.content,
             tags=applied_tags,
             files=files,

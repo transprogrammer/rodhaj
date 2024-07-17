@@ -29,6 +29,7 @@ class TicketThread(msgspec.Struct):
     title: str
     user: Union[discord.User, discord.Member]
     location_id: int
+    mention: str
     content: str
     tags: list[str]
     files: list[discord.File]
