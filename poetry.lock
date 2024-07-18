@@ -863,13 +863,13 @@ files = [
 
 [[package]]
 name = "furo"
-version = "2024.5.6"
+version = "2024.7.18"
 description = "A clean customisable Sphinx documentation theme."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "furo-2024.5.6-py3-none-any.whl", hash = "sha256:490a00d08c0a37ecc90de03ae9227e8eb5d6f7f750edf9807f398a2bdf2358de"},
-    {file = "furo-2024.5.6.tar.gz", hash = "sha256:81f205a6605ebccbb883350432b4831c0196dd3d1bc92f61e1f459045b3d2b0b"},
+    {file = "furo-2024.7.18-py3-none-any.whl", hash = "sha256:b192c7c1f59805494c8ed606d9375fdac6e6ba8178e747e72bc116745fb7e13f"},
+    {file = "furo-2024.7.18.tar.gz", hash = "sha256:37b08c5fccc95d46d8712c8be97acd46043963895edde05b0f4f135d58325c83"},
 ]
 
 [package.dependencies]
@@ -1771,13 +1771,13 @@ files = [
 
 [[package]]
 name = "sphinx"
-version = "7.4.5"
+version = "7.4.6"
 description = "Python documentation generator"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "sphinx-7.4.5-py3-none-any.whl", hash = "sha256:9f135d8c1d277db67be514be579c4c4a26c8c0e962219aaca5a721b04bd6d0d8"},
-    {file = "sphinx-7.4.5.tar.gz", hash = "sha256:a4abe5385bf856df094c1e6cadf24a2351b12057be3670b99a12c05a01d209f5"},
+    {file = "sphinx-7.4.6-py3-none-any.whl", hash = "sha256:915760d6188288a1e30c2cd0d9fa31b1b009bc6e6019cc0c32d16c77d20e86d9"},
+    {file = "sphinx-7.4.6.tar.gz", hash = "sha256:116918d455c493fff3178edea12b4fe1c1e4894680fd81e7b7431ea21d47ca52"},
 ]
 
 [package.dependencies]
@@ -2307,17 +2307,17 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 
 [[package]]
 name = "winloop"
-version = "0.1.5"
+version = "0.1.6"
 description = "Windows version of uvloop"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "winloop-0.1.5-cp310-cp310-win_amd64.whl", hash = "sha256:4d739a1354b49dc1a9f12193661b706572b8edd6486096bd08ed373ee712fc60"},
-    {file = "winloop-0.1.5-cp311-cp311-win_amd64.whl", hash = "sha256:6b394389db4d41e38d7c9c1156d953f71e6c0b6722dda41bc004ef2979541527"},
-    {file = "winloop-0.1.5-cp312-cp312-win_amd64.whl", hash = "sha256:15ef62863d5e85fb3b9d23269cf049aba60ba3a81fbdbbb3b4abac9ce8958b96"},
-    {file = "winloop-0.1.5-cp38-cp38-win_amd64.whl", hash = "sha256:566ce76477c8ece45f909404dbe47ad05566eacde3190f6ef809de1dc5e3eeb9"},
-    {file = "winloop-0.1.5-cp39-cp39-win_amd64.whl", hash = "sha256:9866840aa54b7da31bf780d28de3bc2ac3f657b8e40ffbd072241ffab48dfb1a"},
-    {file = "winloop-0.1.5.tar.gz", hash = "sha256:fd08ad323219f74b2bf3c19ab4062d5b4faf5f1f8f6a4a8f28046df4d36cae4d"},
+    {file = "winloop-0.1.6-cp310-cp310-win_amd64.whl", hash = "sha256:579b74173444d2f81a7db2f3dc40c282b68d926f7ef3e60fd70dff0db86502d9"},
+    {file = "winloop-0.1.6-cp311-cp311-win_amd64.whl", hash = "sha256:21c672482bb3a55c6c73030242e7555315ad12cb7382a4879f8e08d99bc8d976"},
+    {file = "winloop-0.1.6-cp312-cp312-win_amd64.whl", hash = "sha256:9aa0118354f07b2f36953c88f3767fa9832e4de9be2ee76419b8de72a8315cce"},
+    {file = "winloop-0.1.6-cp38-cp38-win_amd64.whl", hash = "sha256:ee5114a971910b6d7ad4fcaf855838b53995c3f6213cd4a78a35644cd2309c1f"},
+    {file = "winloop-0.1.6-cp39-cp39-win_amd64.whl", hash = "sha256:180b55fe6a7fddb2a67bdc9b9d0a1cad22d144e5508abc9d8e6a52083ebee845"},
+    {file = "winloop-0.1.6.tar.gz", hash = "sha256:bd8cda3a4281b5bb4368f8ed94e833421738ee8dba1d208ce8edc1d476eb7b9c"},
 ]
 
 [package.extras]
@@ -2524,4 +2524,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "ef44c828d14d536f7310075010ee94bb096acb6e87e0286ae5172c3bab34390a"
+content-hash = "9c062a3435a1157b64f9ed058d254bd478070f5af6765a6458cdc91df053f815"
