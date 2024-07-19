@@ -2310,17 +2310,17 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 
 [[package]]
 name = "winloop"
-version = "0.1.5"
+version = "0.1.6"
 description = "Windows version of uvloop"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "winloop-0.1.5-cp310-cp310-win_amd64.whl", hash = "sha256:4d739a1354b49dc1a9f12193661b706572b8edd6486096bd08ed373ee712fc60"},
-    {file = "winloop-0.1.5-cp311-cp311-win_amd64.whl", hash = "sha256:6b394389db4d41e38d7c9c1156d953f71e6c0b6722dda41bc004ef2979541527"},
-    {file = "winloop-0.1.5-cp312-cp312-win_amd64.whl", hash = "sha256:15ef62863d5e85fb3b9d23269cf049aba60ba3a81fbdbbb3b4abac9ce8958b96"},
-    {file = "winloop-0.1.5-cp38-cp38-win_amd64.whl", hash = "sha256:566ce76477c8ece45f909404dbe47ad05566eacde3190f6ef809de1dc5e3eeb9"},
-    {file = "winloop-0.1.5-cp39-cp39-win_amd64.whl", hash = "sha256:9866840aa54b7da31bf780d28de3bc2ac3f657b8e40ffbd072241ffab48dfb1a"},
-    {file = "winloop-0.1.5.tar.gz", hash = "sha256:fd08ad323219f74b2bf3c19ab4062d5b4faf5f1f8f6a4a8f28046df4d36cae4d"},
+    {file = "winloop-0.1.6-cp310-cp310-win_amd64.whl", hash = "sha256:579b74173444d2f81a7db2f3dc40c282b68d926f7ef3e60fd70dff0db86502d9"},
+    {file = "winloop-0.1.6-cp311-cp311-win_amd64.whl", hash = "sha256:21c672482bb3a55c6c73030242e7555315ad12cb7382a4879f8e08d99bc8d976"},
+    {file = "winloop-0.1.6-cp312-cp312-win_amd64.whl", hash = "sha256:9aa0118354f07b2f36953c88f3767fa9832e4de9be2ee76419b8de72a8315cce"},
+    {file = "winloop-0.1.6-cp38-cp38-win_amd64.whl", hash = "sha256:ee5114a971910b6d7ad4fcaf855838b53995c3f6213cd4a78a35644cd2309c1f"},
+    {file = "winloop-0.1.6-cp39-cp39-win_amd64.whl", hash = "sha256:180b55fe6a7fddb2a67bdc9b9d0a1cad22d144e5508abc9d8e6a52083ebee845"},
+    {file = "winloop-0.1.6.tar.gz", hash = "sha256:bd8cda3a4281b5bb4368f8ed94e833421738ee8dba1d208ce8edc1d476eb7b9c"},
 ]
 
 [package.extras]
@@ -2527,4 +2527,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "05ae2eb5fbf12be6f0764058c0120b05dee0214b8a5d6534d9baf136e4216c99"
+content-hash = "6ddd4132ec70d8df67f723f03aab0f8620d80f0d08eb0e2ab8a63fbaf4a0e59b"
