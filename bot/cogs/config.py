@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import difflib
 from enum import Enum
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -29,6 +30,7 @@ from libs.utils.checks import (
     check_permissions,
     is_manager,
 )
+from libs.utils.config import OptionsHelp
 from libs.utils.embeds import CooldownEmbed, Embed
 from libs.utils.pages import SimplePages
 from libs.utils.pages.paginator import RoboPages
@@ -37,12 +39,14 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
 UNKNOWN_ERROR_MESSAGE = (
     "An unknown error happened. Please contact the dev team for assistance"
 )
+OPTIONS_FILE = Path(__file__).parents[1] / "locale" / "options.json"
 
 
 class BlocklistTicket(NamedTuple):
@@ -347,6 +351,7 @@ class Config(commands.Cog):
             "anon_reply_without_command",
             "anon_snippets",
         ]
+        self.options_help = OptionsHelp(OPTIONS_FILE)
 
     @property
     def display_emoji(self) -> discord.PartialEmoji:

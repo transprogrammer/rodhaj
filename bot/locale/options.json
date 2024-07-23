@@ -1,0 +1,50 @@
+{
+    "guild_age": {
+        "default": "2 days",
+        "description": "Sets the default age required for an guild in order to use Rodhaj",
+        "examples": [
+            "`config set-age guild 2 days`"
+        ],
+        "notes": []
+    },
+    "account_age": {
+        "default": "2 hours",
+        "description": "Sets the default age required for an account that has joined the guild that Rodhaj is operating on",
+        "examples": [
+            "`config set-age account 2 days`"
+        ],
+        "notes": []
+    },
+    "mention": {
+        "default": "@here",
+        "description": "Sets the default mention to use when new tickets are created",
+        "examples": [
+            "`config set mention @here`"
+        ],
+        "notes": ["Pass in an empty string in order to disable this"]
+    },
+    "anon_replies": {
+        "default": false,
+        "description": "Enables the anonymous replying feature of Rodhaj. This affects the guild itself.",
+        "examples": [
+            "`config toggle anon_replies false`"
+        ],
+        "notes": []
+    },
+    "anon_reply_without_command": {
+        "default": false,
+        "description": "Anonymously reply without using the command",
+        "examples": [
+            "`config toggle anon_reply_without_command true`"
+        ],
+        "notes": []
+    },
+    "anon_snippets": {
+        "default": false,
+        "description": "Enable the usage of sending snippets anonymously",
+        "examples": [
+            "`config toggle anon_snippets true`"
+        ],
+        "notes": []
+    }
+}
