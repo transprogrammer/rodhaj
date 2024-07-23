@@ -39,7 +39,6 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
-
     from rodhaj import Rodhaj
 
 
