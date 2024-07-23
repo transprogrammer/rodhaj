@@ -17,6 +17,7 @@ from typing import (
 
 import asyncpg
 import discord
+import humanize
 import msgspec
 from async_lru import alru_cache
 from discord import app_commands
@@ -32,6 +33,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -225,14 +227,20 @@ class GuildWebhookDispatcher:
 
 
 class ConfigPageSource(menus.AsyncIteratorPageSource):
-    def __init__(self, entries: dict[str, Any], sort: bool):
+    def __init__(self, entries: dict[str, Any], active: Optional[bool] = None):
         super().__init__(self.config_iterator(entries), per_page=20)
-        self.sort = sort
+        self.active = active
 
     async def config_iterator(self, entries: dict[str, Any]) -> AsyncIterator[str]:
         for key, entry in entries.items():
-            if entry is self.sort or not isinstance(entry, bool):
-                yield f"{key}: {entry}"
+            result = f"**{key}:** {entry}"
+            # Wtf is wrong with me - Noelle
+            if self.active is None:
+                if isinstance(entry, datetime.timedelta):
+                    entry = humanize.precisedelta(entry)
+                yield result
+            elif entry is self.active:
+                yield result
 
     async def format_page(self, menu: ConfigPages, entries: list[str]):
         pages = []
@@ -244,9 +252,23 @@ class ConfigPageSource(menus.AsyncIteratorPageSource):
 
 
 class ConfigPages(RoboPages):
-    def __init__(self, entries: dict[str, Any], *, ctx: GuildContext, sort: bool):
-        super().__init__(ConfigPageSource(entries, sort), ctx=ctx)
+    def __init__(
+        self,
+        entries: dict[str, Any],
+        *,
+        ctx: GuildContext,
+        active: Optional[bool] = None,
+    ):
+        super().__init__(ConfigPageSource(entries, active), ctx=ctx)
         self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
+
+
+class ConfigOptionFlags(commands.FlagConverter):
+    active: Optional[bool] = commands.flag(
+        name="active",
+        default=None,
+        description="Whether to show current active options or not. Using None will show all options, regardless of active status or not",
+    )
 
 
 class SetupFlags(commands.FlagConverter):
@@ -318,11 +340,6 @@ class Config(commands.Cog):
             "account_age",
             "guild_age",
             "mention",
-            "anon_replies",
-            "anon_reply_without_command",
-            "anon_snippets",
-        ]
-        self.settings_keys = [
             "anon_replies",
             "anon_reply_without_command",
             "anon_snippets",
@@ -706,12 +723,18 @@ class Config(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    # TODO: Add an sort option (for sorting through enabled/disabled options)
     @check_permissions(manage_guild=True)
     @commands.guild_only()
-    @config.command(name="options")
-    async def config_options(self, ctx: GuildContext, sort: bool) -> None:
-        """Shows options for configuration"""
+    @config.command(name="options", usage="active: <bool>")
+    async def config_options(
+        self, ctx: GuildContext, *, flags: ConfigOptionFlags
+    ) -> None:
+        """Shows options for configuration
+
+        If the active flag is not supplied, then all of the options will be displayed.
+        The active flag controls whether active settings are shown are not. For the
+        purposes of simplicity, non-boolean options are not considered "active".
+        """
         guild_settings = await self.get_guild_settings(ctx.guild.id)
         if guild_settings is None:
             msg = (
@@ -721,7 +744,7 @@ class Config(commands.Cog):
             await ctx.send(msg)
             return
 
-        pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, sort=sort)
+        pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, active=flags.active)
         await pages.start()
 
     @check_permissions(manage_guild=True)
