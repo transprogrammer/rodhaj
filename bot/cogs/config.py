@@ -429,12 +429,6 @@ class Config(commands.Cog):
         command_type = "Toggled" if config_type == ConfigType.TOGGLE else "Set"
         await ctx.send(f"{command_type} `{key}` from `{original_value}` to `{value}`")
 
-    async def _handle_config_error(
-        self, error: commands.CommandError, ctx: GuildContext
-    ) -> None:
-        if isinstance(error, commands.BadArgument):
-            await ctx.send(str(error))
-
     ### Blocklist utilities
 
     async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
@@ -470,11 +464,13 @@ class Config(commands.Cog):
 
     ### Misc Utilities
     async def _handle_error(
-        self, ctx: GuildContext, error: commands.CommandError
+        self, error: commands.CommandError, *, ctx: GuildContext
     ) -> None:
         if isinstance(error, commands.CommandOnCooldown):
             embed = CooldownEmbed(error.retry_after)
             await ctx.send(embed=embed)
+        elif isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
 
     @check_permissions(manage_guild=True)
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
@@ -707,13 +703,13 @@ class Config(commands.Cog):
     async def on_setup_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        await self._handle_error(ctx, error)
+        await self._handle_error(error, ctx=ctx)
 
     @delete.error
     async def on_delete_error(
         self, ctx: GuildContext, error: commands.CommandError
     ) -> None:
-        await self._handle_error(ctx, error)
+        await self._handle_error(error, ctx=ctx)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
@@ -836,19 +832,19 @@ class Config(commands.Cog):
     async def on_config_set_age_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
-        await self._handle_config_error(error, ctx)
+        await self._handle_error(error, ctx=ctx)
 
     @config_set.error
     async def on_config_set_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
-        await self._handle_config_error(error, ctx)
+        await self._handle_error(error, ctx=ctx)
 
     @config_toggle.error
     async def on_config_toggle_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
-        await self._handle_config_error(error, ctx)
+        await self._handle_error(error, ctx=ctx)
 
     @check_permissions(manage_guild=True)
     @commands.guild_only()
