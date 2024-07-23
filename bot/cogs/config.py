@@ -24,7 +24,11 @@ from discord import app_commands
 from discord.ext import commands, menus
 from libs.tickets.utils import get_cached_thread
 from libs.utils import GuildContext
-from libs.utils.checks import bot_check_permissions, check_permissions
+from libs.utils.checks import (
+    bot_check_permissions,
+    check_permissions,
+    is_manager,
+)
 from libs.utils.embeds import CooldownEmbed, Embed
 from libs.utils.pages import SimplePages
 from libs.utils.pages.paginator import RoboPages
@@ -33,6 +37,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -471,7 +476,7 @@ class Config(commands.Cog):
         elif isinstance(error, commands.BadArgument):
             await ctx.send(str(error))
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.guild_only()
     @commands.group(name="rodhaj")
@@ -480,7 +485,7 @@ class Config(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
     @commands.guild_only()
@@ -644,7 +649,7 @@ class Config(commands.Cog):
             msg = f"Rodhaj channels successfully created! The ticket channel can be found under {ticket_channel.mention}"
             await ctx.send(msg)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
     @commands.guild_only()
@@ -710,7 +715,7 @@ class Config(commands.Cog):
     ) -> None:
         await self._handle_error(error, ctx=ctx)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @commands.hybrid_group(name="config")
     async def config(self, ctx: GuildContext) -> None:
@@ -718,7 +723,7 @@ class Config(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @config.command(name="options", usage="active: <bool>")
     async def config_options(
@@ -742,7 +747,7 @@ class Config(commands.Cog):
         pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, active=flags.active)
         await pages.start()
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @config.command(name="set-age")
     async def config_set_age(
@@ -772,7 +777,7 @@ class Config(commands.Cog):
         self.get_guild_settings.cache_invalidate(ctx.guild.id)
         await ctx.send(f"Set `{type}_age` to `{duration.td}`")
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @config.command(name="set")
     async def config_set(
@@ -800,7 +805,7 @@ class Config(commands.Cog):
 
         await self.set_guild_settings(key, value, config_type=ConfigType.SET, ctx=ctx)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @config.command(name="toggle")
     async def config_toggle(
@@ -845,7 +850,7 @@ class Config(commands.Cog):
     ):
         await self._handle_error(error, ctx=ctx)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @config.group(name="prefix", fallback="info")
     async def prefix(self, ctx: GuildContext) -> None:
@@ -862,7 +867,7 @@ class Config(commands.Cog):
         embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)  # type: ignore
         await ctx.send(embed=embed)
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @prefix.command(name="add")
     @app_commands.describe(prefix="The new prefix to add")
@@ -891,7 +896,7 @@ class Config(commands.Cog):
         get_prefix.cache_invalidate(self.bot, ctx.message)
         await ctx.send(f"Added prefix: `{prefix}`")
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @prefix.command(name="edit")
     @app_commands.describe(
@@ -920,7 +925,7 @@ class Config(commands.Cog):
         else:
             await ctx.send("The prefix is not in the list of prefixes for your server")
 
-    @check_permissions(manage_guild=True)
+    @is_manager()
     @commands.guild_only()
     @prefix.command(name="delete")
     @app_commands.describe(prefix="The prefix to delete")
