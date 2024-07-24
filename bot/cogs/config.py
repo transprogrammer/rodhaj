@@ -39,6 +39,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -232,6 +233,44 @@ class GuildWebhookDispatcher:
         return GuildWebhook(bot=self.bot, **dict(rows))
 
 
+class ConfigHelpEntry(msgspec.Struct, frozen=True):
+    key: str
+    default: str
+    description: str
+    examples: list[str]
+    notes: list[str]
+
+
+class ConfigEntryEmbed(Embed):
+    def __init__(self, entry: ConfigHelpEntry, **kwargs):
+        super().__init__(**kwargs)
+        self.title = entry.key
+        self.description = entry.description
+        self.add_field(name="Default", value=entry.default, inline=False)
+        self.add_field(name="Example(s)", value="\n".join(entry.examples), inline=False)
+        self.add_field(
+            name="Notes",
+            value="\n".join(f"- {note}" for note in entry.notes) or None,
+            inline=False,
+        )
+
+
+class ConfigHelpPageSource(menus.ListPageSource):
+    async def format_page(self, menu: ConfigHelpPages, entry: ConfigHelpEntry):
+        embed = ConfigEntryEmbed(entry=entry)
+
+        maximum = self.get_max_pages()
+        if maximum > 1:
+            embed.set_footer(text=f"Page {menu.current_page + 1}/{maximum}")
+        return embed
+
+
+class ConfigHelpPages(RoboPages):
+    def __init__(self, entries: list[ConfigHelpEntry], *, ctx: GuildContext):
+        super().__init__(ConfigHelpPageSource(entries, per_page=1), ctx=ctx)
+        self.embed = discord.Embed()
+
+
 class ConfigPageSource(menus.AsyncIteratorPageSource):
     def __init__(self, entries: dict[str, Any], active: Optional[bool] = None):
         super().__init__(self.config_iterator(entries), per_page=20)
@@ -300,15 +339,16 @@ class ConfigKeyConverter(commands.Converter):
         return f"Key not found. Did you mean...\n{close_keys}"
 
     async def convert(self, ctx: GuildContext, argument: str) -> str:
+        lowered = argument.lower()
         cog: Optional[Config] = ctx.bot.get_cog("Config")  # type: ignore
 
         if not cog:
             raise RuntimeError("Unable to get Config cog")
 
-        if argument not in cog.config_keys:
-            raise commands.BadArgument(self.disambiguate(argument, cog.config_keys))
+        if lowered not in cog.config_keys:
+            raise commands.BadArgument(self.disambiguate(lowered, cog.config_keys))
 
-        return argument
+        return lowered
 
 
 class ConfigValueConverter(commands.Converter):
@@ -752,6 +792,34 @@ class Config(commands.Cog):
 
     @is_manager()
     @commands.guild_only()
+    @config.group(name="help", aliases=["info"])
+    async def config_help(
+        self, ctx: GuildContext, option: Annotated[str, ConfigKeyConverter]
+    ) -> None:
+        """Shows help information for different configuration options"""
+        # Because we are using the converter, all options are guaranteed to be correct
+        embed = ConfigEntryEmbed(
+            ConfigHelpEntry(key=option, **self.options_help[option])
+        )
+        await ctx.send(embed=embed)
+
+    @is_manager()
+    @commands.guild_only()
+    @config_help.command(name="all")
+    async def config_help_all(self, ctx: GuildContext):
+        """Shows all possible help information for all configurations"""
+        # We need to separate this since we are using the key converter. If it is an invalid option, it passes back None,
+        # thus causing it to show all entries. This isn't that useful when you just made one mistake.
+        # Modmail handles this differently by internally looking for the key, and giving an whole embed list of possible options
+        converted = [
+            ConfigHelpEntry(key=key, **item)
+            for key, item in self.options_help.all().items()
+        ]
+        pages = ConfigHelpPages(entries=converted, ctx=ctx)
+        await pages.start()
+
+    @is_manager()
+    @commands.guild_only()
     @config.command(name="set-age")
     async def config_set_age(
         self,
@@ -849,6 +917,12 @@ class Config(commands.Cog):
 
     @config_toggle.error
     async def on_config_toggle_error(
+        self, ctx: GuildContext, error: commands.CommandError
+    ):
+        await self._handle_error(error, ctx=ctx)
+
+    @config_help.error
+    async def on_config_help_error(
         self, ctx: GuildContext, error: commands.CommandError
     ):
         await self._handle_error(error, ctx=ctx)
