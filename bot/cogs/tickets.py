@@ -243,7 +243,7 @@ class Tickets(commands.Cog):
         ]
         processed_tags = [tag for tag in applied_tags if tag is not None]
 
-        content = f"({ticket.user.display_name}, {discord.utils.format_dt(ticket.created_at)})\n\n{ticket.content}"
+        content = f"({ticket.mention} - {ticket.user.display_name}, {discord.utils.format_dt(ticket.created_at)})\n\n{ticket.content}"
         created_ticket = await tc.create_thread(
             applied_tags=processed_tags,
             name=ticket.title,

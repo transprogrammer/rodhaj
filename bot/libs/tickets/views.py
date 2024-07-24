@@ -13,6 +13,7 @@ from .utils import register_user, safe_content
 if TYPE_CHECKING:
     from libs.utils.context import RoboContext
 
+    from bot.cogs.config import Config
     from bot.cogs.tickets import Tickets
     from bot.rodhaj import Rodhaj
 
@@ -133,6 +134,7 @@ class TicketConfirmView(RoboView):
         bot: Rodhaj,
         ctx: RoboContext,
         cog: Tickets,
+        config_cog: Config,
         content: str,
         guild: discord.Guild,
         delete_after: bool = True,
@@ -142,6 +144,7 @@ class TicketConfirmView(RoboView):
         self.bot = bot
         self.ctx = ctx
         self.cog = cog
+        self.config_cog = config_cog
         self.content = content
         self.guild = guild
         self.delete_after = delete_after
@@ -161,6 +164,18 @@ class TicketConfirmView(RoboView):
             await interaction.delete_original_response()
 
         self.stop()
+
+    async def get_or_fetch_member(self, member_id: int) -> Optional[discord.Member]:
+        member = self.guild.get_member(member_id)
+        if member is not None:
+            return member
+
+        members = await self.guild.query_members(
+            limit=1, user_ids=[member_id], cache=True
+        )
+        if not members:
+            return None
+        return members[0]
 
     @discord.ui.button(
         label="Checklist",
@@ -228,6 +243,31 @@ class TicketConfirmView(RoboView):
 
         applied_tags = [k for k, v in tags.items() if v is True]
 
+        guild_settings = await self.config_cog.get_guild_settings(self.guild.id)
+        potential_member = await self.get_or_fetch_member(author.id)
+
+        if not guild_settings:
+            await interaction.response.send_message(
+                "Unable to find guild settings", ephemeral=True
+            )
+            return
+
+        if (self.guild.created_at - interaction.created_at) < guild_settings.guild_age:
+            await interaction.response.send_message(
+                "The guild is too young in order to utilize Rodhaj.", ephemeral=True
+            )
+            return
+        elif (
+            potential_member
+        ):  # Since we are checking join times, if we don't have the proper member, we can only skip it.
+            joined_at = potential_member.joined_at or discord.utils.utcnow()
+            if (joined_at - interaction.created_at) < guild_settings.account_age:
+                await interaction.response.send_message(
+                    "This account joined the server too soon in order to utilize Rodhaj.",
+                    ephemeral=True,
+                )
+            return
+
         if not status.title.is_set() or not status.tags.is_set():
             dict_status = {"title": status.title, "tags": status.tags}
             formatted_status = "\n".join(
@@ -255,6 +295,7 @@ class TicketConfirmView(RoboView):
             title=title,
             user=author,
             location_id=self.guild.id,
+            mention=guild_settings.mention,
             content=self.content,
             tags=applied_tags,
             files=files,
