@@ -39,6 +39,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -791,7 +792,8 @@ class Config(commands.Cog):
 
     @is_manager()
     @commands.guild_only()
-    @config.group(name="help", aliases=["info"])
+    @config.command(name="help", aliases=["info"])
+    @app_commands.describe(option="Configuration option to use for lookup")
     async def config_help(
         self, ctx: GuildContext, option: Annotated[str, ConfigKeyConverter]
     ) -> None:
@@ -804,7 +806,7 @@ class Config(commands.Cog):
 
     @is_manager()
     @commands.guild_only()
-    @config_help.command(name="all")
+    @config.command(name="help-all")
     async def config_help_all(self, ctx: GuildContext):
         """Shows all possible help information for all configurations"""
         # We need to separate this since we are using the key converter. If it is an invalid option, it passes back None,
