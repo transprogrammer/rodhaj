@@ -39,6 +39,7 @@ from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
     from cogs.tickets import Tickets
+
     from rodhaj import Rodhaj
 
 
@@ -311,7 +312,7 @@ class ConfigOptionFlags(commands.FlagConverter):
     active: Optional[bool] = commands.flag(
         name="active",
         default=None,
-        description="Whether to show current active options or not. Using None will show all options, regardless of active status or not",
+        description="Whether to show current active options or not. Using None will show all options",
     )
 
 
@@ -792,15 +793,13 @@ class Config(commands.Cog):
     @is_manager()
     @commands.guild_only()
     @config.command(name="help", aliases=["info"])
-    @app_commands.describe(option="Configuration option to use for lookup")
+    @app_commands.describe(key="Configuration key to use for lookup")
     async def config_help(
-        self, ctx: GuildContext, option: Annotated[str, ConfigKeyConverter]
+        self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter]
     ) -> None:
         """Shows help information for different configuration options"""
         # Because we are using the converter, all options are guaranteed to be correct
-        embed = ConfigEntryEmbed(
-            ConfigHelpEntry(key=option, **self.options_help[option])
-        )
+        embed = ConfigEntryEmbed(ConfigHelpEntry(key=key, **self.options_help[key]))
         await ctx.send(embed=embed)
 
     @is_manager()
@@ -821,6 +820,10 @@ class Config(commands.Cog):
     @is_manager()
     @commands.guild_only()
     @config.command(name="set-age")
+    @app_commands.describe(
+        type="Type of minimum age to set",
+        duration="The duration that this minimum age should be. E.g. 2 days",
+    )
     async def config_set_age(
         self,
         ctx: GuildContext,
@@ -830,7 +833,7 @@ class Config(commands.Cog):
             FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
         ],
     ) -> None:
-        """Sets an minium duration for age-related options
+        """Sets an minimum duration for age-related options
 
         This command handles all age-related options. This means you can use this
         to set the minimum age required to use Rodhaj
@@ -851,6 +854,10 @@ class Config(commands.Cog):
     @is_manager()
     @commands.guild_only()
     @config.command(name="set")
+    @app_commands.describe(
+        key="Configuration key to use for lookup",
+        value="Value to set for configuration",
+    )
     async def config_set(
         self,
         ctx: GuildContext,
@@ -879,6 +886,10 @@ class Config(commands.Cog):
     @is_manager()
     @commands.guild_only()
     @config.command(name="toggle")
+    @app_commands.describe(
+        key="Configuration key to use for lookup",
+        value="Boolean option to set the configuration",
+    )
     async def config_toggle(
         self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter], *, value: bool
     ) -> None:
