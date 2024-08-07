@@ -13,6 +13,7 @@ services:
       - 8555:8555
     depends_on:
       - database
+    # Oftentimes if Rodhaj started too early (aka starting without this script), then it would entirely not run the migrations and error out
     command: sh -c '/rodhaj/wait-for database:5432 -- echo "[Wait-for] PostgreSQL is fully up. Starting Rodhaj." && /rodhaj/start.sh'
     restart: always
 
