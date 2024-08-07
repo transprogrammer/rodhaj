@@ -109,17 +109,17 @@ Using Docker
 If you decide to use Docker to run the local PostgreSQL server, then a
 pre-built Docker Compose file is provided. Setup instructions are as follows:
 
-1. Copy ``envs/docker.env`` to ``.env`` within the root of the repo. Modify as appropriate.
+1. Copy ``docker/example.env`` to ``.env`` within the ``docker`` folder. Modify as appropriate.
 
 .. code-block:: bash
 
-    cp envs/docker.env .env
+    cp docker/example.env docker/.env
 
 2. Run the following command to start the PostgreSQL server
 
 .. code-block:: bash
 
-    docker compose -f docker-compose-dev.yml up -d
+    docker compose -f docker/docker-compose.dev.yml up -d
 
 Extensions
 ==========
