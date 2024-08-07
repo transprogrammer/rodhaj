@@ -11,6 +11,7 @@ on:
 jobs:
   Build-and-Push:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]'}} || ${{ github.actor != 'dependabot[bot]'}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
