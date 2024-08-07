@@ -5,6 +5,9 @@ on:
       - main
 jobs:
   Release:
+    permissions:
+      contents: write
+
     runs-on: ubuntu-latest
     if: contains(github.event.head_commit.message, '#major') || contains(github.event.head_commit.message, '#minor') || contains(github.event.head_commit.message, '#patch')
     steps:
@@ -27,3 +30,4 @@ jobs:
         token: ${{ secrets.PAT_TOKEN }}
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: ${{ steps.tag_version.outputs.new_tag }}
+        artifacts: "docker/docker-compose.yml,docker/example.env,config-example.yml"
