@@ -48,7 +48,7 @@ services:
       - prometheus-data:/prometheus
 
   # first login uses admin/admin
-  # add data source for http://immich-prometheus:9090 to get started
+  # add data source for http://rodhaj-prometheus:9090 to get started
   rodhaj-grafana:
     container_name: rodhaj_grafana
     command: ['./run.sh', '-disable-reporting']
