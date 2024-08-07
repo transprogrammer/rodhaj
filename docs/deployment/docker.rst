@@ -14,32 +14,37 @@ Rodhaj Docker images.
 Step 1 - Download required files
 ================================
 
-Create a directory (e.g. ``./rodhaj``), which will hold all of the required files.
+Download the necessary archive for getting started. This archive contains all
+of the files needed to get started. These are provided either in ``.zip`` or ``.tar.gz``
+formats. 
 
 .. code-block:: bash
 
-    mkdir ./rodhaj
-    cd ./rodhaj
+    wget https://github.com/transprogrammer/rodhaj/releases/latest/download/rodhaj-docker.tar.gz
 
-Download ``docker-compose.yml``, ``config.yml``, and ``example.env`` using the following commands:
+    # .zip version download
+    wget https://github.com/transprogrammer/rodhaj/releases/latest/download/rodhaj-docker.zip
+
+We need to unpack the archive in order to access the files. The following commands should do that.
 
 .. code-block:: bash
 
-    wget -O docker-compose.yml https://github.com/transprogrammer/rodhaj/releases/latest/download/docker-compose.yml \
-    && wget -O config.yml https://github.com/transprogrammer/rodhaj/releases/latest/download/config-example.yml \
-    && wget -O .env https://github.com/transprogrammer/rodhaj/releases/latest/download/example.env
+    tar -xvzf rodhaj-docker.tar.gz
 
-.. note::
+    # .zip version unpacking
+    unzip rodhaj-docker.zip
 
-    Optionally, if you desired a full production version, then use the following commands to download
-    ``docker-compose.prod.yml``, ``example.env``, and ``prometheus.yml``:
+Once we have the files, we can now ``cd`` into the new extracted archive. 
 
-    .. code-block:: bash
+.. code-block:: bash
+    
+    cd rodhaj-docker
 
-        wget -O docker-compose.yml https://raw.githubusercontent.com/transprogrammer/rodhaj/main/docker/docker-compose.prod.yml \
-        && wget -O prometheus.yml https://raw.githubusercontent.com/transprogrammer/rodhaj/main/docker/prometheus.yml \
-        && wget -O .env https://github.com/transprogrammer/rodhaj/releases/latest/download/example.env
+.. important:: 
 
+    Throughout the rest of the guide, the next steps assume that 
+    you are in the ``rodhaj-docker`` directory.
+    
 Step 2 - Populate ``.env`` and ``config.yml`` file with values
 ==============================================================
 
