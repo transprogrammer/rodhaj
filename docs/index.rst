@@ -11,6 +11,7 @@ Rodhaj
    :hidden:
    :caption: Guides 
 
+   deployment/index
    user-guide/index
    dev-guide/index
 
