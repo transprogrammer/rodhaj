@@ -42,7 +42,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rodhaj-build-cache:bot
-          cache-to: type=registry,mode=max,ref=ghcr.io/${{ github.repository_owner }}/rodhaj-build-cache:bot
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/rodhaj:bot-build-cache
+          cache-to: type=registry,mode=max,ref=ghcr.io/${{ github.repository_owner }}/rodhaj:bot-build-cache
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
