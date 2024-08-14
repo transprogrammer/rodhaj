@@ -3,7 +3,7 @@ name: rodhaj_prod
 services:
   rodhaj:
     container_name: rodhaj
-    image: ghcr.io/transprogrammer/rodhaj:latest
+    image: ghcr.io/transprogrammer/rodhaj:edge
     volumes:
       # Do not edit the next line. If you want to change the path of the configuration file, please edit the CONFIG_LOCATION variable
       - ${CONFIG_LOCATION}:/rodhaj/bot/config.yml
