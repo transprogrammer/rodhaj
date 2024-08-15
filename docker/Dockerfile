@@ -7,10 +7,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-  tini \
   bash \
-  netcat-traditional \
   git \
+  netcat-traditional \
+  tini \
   && apt-get clean
 
 WORKDIR /rodhaj

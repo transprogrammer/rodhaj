@@ -4,26 +4,66 @@ on:
     branches:
       - main
 jobs:
+  Bundle:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '#major') || contains(github.event.head_commit.message, '#minor') || contains(github.event.head_commit.message, '#patch')
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare for bundling
+        run: |
+          mkdir -p rodhaj-docker
+          mkdir -p releases
+          cp docker/docker-compose.yml rodhaj-docker/
+          cp docker/example.env rodhaj-docker/
+          cp -r docker/pg/ rodhaj-docker/
+  
+      - name: Bundle docker-related files
+        run: |
+          zip releases/rodhaj-docker.zip rodhaj-docker/**
+          tar -czf releases/rodhaj-docker.tar.gz rodhaj-docker/** 
+  
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          path: releases
+  
+
   Release:
     runs-on: ubuntu-latest
+    needs: Bundle
     if: contains(github.event.head_commit.message, '#major') || contains(github.event.head_commit.message, '#minor') || contains(github.event.head_commit.message, '#patch')
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: '0'
 
+    - name: Get Previous Tag
+      uses: WyriHaximus/github-action-get-previous-tag@v1
+      id: prev_tag
+      with:
+        fallback: v0.1.0
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: artifact
+        path: releases
+
     - name: Bump version and push tag
       uses: anothrNick/github-tag-action@1.67.0
       id: tag_version
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         WITH_V: true
         RELEASE_BRANCHES: main
         
     - name: Release New Version
       uses: ncipollo/release-action@v1
       with:
-        body: "https://github.com/transprogrammer/rodhaj/compare/${{ steps.tag_version.outputs.tag }}...${{ steps.tag_version.outputs.new_tag }}"
+        body: "https://github.com/transprogrammer/rodhaj/compare/${{ steps.prev_tag.outputs.tag }}...${{ steps.tag_version.outputs.new_tag }}"
         token: ${{ secrets.PAT_TOKEN }}
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: ${{ steps.tag_version.outputs.new_tag }}
+        artifacts: "releases/rodhaj-docker.zip,releases/rodhaj-docker.tar.gz"

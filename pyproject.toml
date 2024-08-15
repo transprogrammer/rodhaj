@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rodhaj"
-version = "0.2.0"
+version = "0.3.1"
 description = "Transprogrammer's custom modmail bot"
 authors = ["No767 <73260931+No767@users.noreply.github.com>"]
 license = "Apache-2.0"
@@ -20,8 +20,8 @@ click = "^8.1.7"
 async-lru = "^2.0.4"
 msgspec = "^0.18.6"
 jishaku = "^2.5.2"
-pyyaml = "^6.0.1"
-watchfiles = "^0.22.0"
+pyyaml = "^6.0.2"
+watchfiles = "^0.23.0"
 typing-extensions = "^4.12.2"
 prometheus-client = "^0.20.0"
 prometheus-async = "^22.2.0"
@@ -41,7 +41,7 @@ tox = "^4"
 sphinx = "^7.4.7"
 sphinx-autobuild = "^2024.4.16"
 sphinx-copybutton = "^0.5.2"
-furo = "^2024.7.18"
+furo = "^2024.8.6"
 
 [tool.isort]
 profile = 'black'
