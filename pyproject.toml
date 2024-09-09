@@ -39,7 +39,7 @@ tox = "^4"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.4.7"
-sphinx-autobuild = "^2024.4.16"
+sphinx-autobuild = "^2024.9.3"
 sphinx-copybutton = "^0.5.2"
 furo = "^2024.8.6"
 
