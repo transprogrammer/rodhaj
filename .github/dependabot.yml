@@ -20,4 +20,9 @@ updates:
       # Poetry should always install the latest version instead
       - dependency-name: "pyright"
         update-types: ["version-update:semver-patch"]
+    groups:
+      dev-deps:
+        dependency-type: "development"
+      prod-deps:
+        dependency-type: "production"
       
