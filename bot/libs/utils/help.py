@@ -23,8 +23,7 @@ def process_perms_name(
     ):
         # See https://stackoverflow.com/a/27638751
         merge_list = [
-            next(iter(parent.extras["permissions"]))
-            for parent in command.parents
+            next(iter(parent.extras["permissions"])) for parent in command.parents
         ]
 
     if "permissions" in command.extras:
@@ -55,9 +54,7 @@ class GroupHelpPageSource(menus.ListPageSource):
             return f"{self.description}\n\n**Required Permissions**: {process_perms_name(group)}"
         return self.description
 
-    async def format_page(
-        self, menu: RoboPages, commands: list[commands.Command]
-    ):
+    async def format_page(self, menu: RoboPages, commands: list[commands.Command]):
         embed = discord.Embed(
             title=self.title,
             description=self._process_description(self.group),
@@ -85,9 +82,7 @@ class GroupHelpPageSource(menus.ListPageSource):
 
 
 class HelpSelectMenu(discord.ui.Select["HelpMenu"]):
-    def __init__(
-        self, entries: dict[commands.Cog, list[commands.Command]], bot
-    ):
+    def __init__(self, entries: dict[commands.Cog, list[commands.Command]], bot):
         super().__init__(
             placeholder="Select a category...",
             min_values=1,
@@ -289,9 +284,7 @@ class RodhajHelp(commands.HelpCommand):
 
             cog = bot.get_cog(name)
             if cog is not None:
-                all_commands[cog] = sorted(
-                    children, key=lambda c: c.qualified_name
-                )
+                all_commands[cog] = sorted(children, key=lambda c: c.qualified_name)
 
         menu = HelpMenu(FrontPageSource(), ctx=self.context)
         menu.add_categories(all_commands)
@@ -312,13 +305,8 @@ class RodhajHelp(commands.HelpCommand):
     ):
         embed_like.title = self.get_command_signature(command)
         processed_perms = process_perms_name(command)
-        if (
-            isinstance(embed_like, discord.Embed)
-            and processed_perms is not None
-        ):
-            embed_like.add_field(
-                name="Required Permissions", value=processed_perms
-            )
+        if isinstance(embed_like, discord.Embed) and processed_perms is not None:
+            embed_like.add_field(name="Required Permissions", value=processed_perms)
 
         if command.description:
             embed_like.description = f"{command.description}\n\n{command.help}"
@@ -340,9 +328,7 @@ class RodhajHelp(commands.HelpCommand):
         if len(entries) == 0:
             return await self.send_command_help(group)
 
-        source = GroupHelpPageSource(
-            group, entries, prefix=self.context.clean_prefix
-        )
+        source = GroupHelpPageSource(group, entries, prefix=self.context.clean_prefix)
         self.common_command_formatting(source, group)
         menu = HelpMenu(source, ctx=self.context)
         await menu.start()

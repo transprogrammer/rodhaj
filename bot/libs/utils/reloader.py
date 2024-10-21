@@ -58,9 +58,7 @@ class Reloader:
             importlib.reload(actual_module)
             self.logger.info("Reloaded lib module: %s", module)
         except KeyError:
-            self.logger.warning(
-                "Failed to reload module %s. Does it exist?", module
-            )
+            self.logger.warning("Failed to reload module %s. Does it exist?", module)
 
     async def reload_extension_or_library(self, module: str) -> None:
         if module.startswith("libs"):

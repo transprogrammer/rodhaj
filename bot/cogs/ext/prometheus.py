@@ -67,12 +67,8 @@ class Metrics:
             ["shard"],
             states=["connected", "disconnected"],
         )
-        self.latency = Gauge(
-            f"{METRIC_PREFIX}latency", "Latency to Discord", ["shard"]
-        )
-        self.commands = Summary(
-            f"{METRIC_PREFIX}commands", "Total commands executed"
-        )
+        self.latency = Gauge(f"{METRIC_PREFIX}latency", "Latency to Discord", ["shard"])
+        self.commands = Summary(f"{METRIC_PREFIX}commands", "Total commands executed")
         self.version = Info(f"{METRIC_PREFIX}version", "Versions of the bot")
         self.features = FeatureCollector(self.bot)
 

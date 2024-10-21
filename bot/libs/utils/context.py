@@ -71,9 +71,7 @@ class RoboContext(commands.Context):
         ephemeral: bool = False,
         delete_after: bool = False,
     ) -> Optional[bool]:
-        view = ConfirmationView(
-            ctx=self, timeout=timeout, delete_after=delete_after
-        )
+        view = ConfirmationView(ctx=self, timeout=timeout, delete_after=delete_after)
         view.message = await self.send(message, view=view, ephemeral=ephemeral)
         await view.wait()
         return view.value

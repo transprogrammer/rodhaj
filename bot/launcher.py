@@ -36,12 +36,8 @@ async def main() -> None:
         async with Rodhaj(
             config=config, intents=intents, session=session, pool=pool
         ) as bot:
-            bot.loop.add_signal_handler(
-                signal.SIGTERM, KeyboardInterruptHandler(bot)
-            )
-            bot.loop.add_signal_handler(
-                signal.SIGINT, KeyboardInterruptHandler(bot)
-            )
+            bot.loop.add_signal_handler(signal.SIGTERM, KeyboardInterruptHandler(bot))
+            bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
             await bot.start(TOKEN)
 
 

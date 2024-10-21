@@ -36,9 +36,9 @@ class Utilities(commands.Cog):
         commit_tz = datetime.timezone(
             datetime.timedelta(minutes=commit.commit_time_offset)
         )
-        commit_time = datetime.datetime.fromtimestamp(
-            commit.commit_time
-        ).astimezone(commit_tz)
+        commit_time = datetime.datetime.fromtimestamp(commit.commit_time).astimezone(
+            commit_tz
+        )
 
         # [`hash`](url) message (offset)
         offset = format_dt(commit_time.astimezone(datetime.timezone.utc), "R")
@@ -48,9 +48,7 @@ class Utilities(commands.Cog):
     def get_last_commits(self, count: int = 5):
         repo = pygit2.Repository(".git")
         commits = list(
-            itertools.islice(
-                repo.walk(repo.head.target, SortMode.TOPOLOGICAL), count
-            )
+            itertools.islice(repo.walk(repo.head.target, SortMode.TOPOLOGICAL), count)
         )
         return "\n".join(self.format_commit(c) for c in commits)
 

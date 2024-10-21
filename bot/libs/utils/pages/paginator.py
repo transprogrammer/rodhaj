@@ -50,9 +50,7 @@ class RoboPages(discord.ui.View):
             self.add_item(self.stop_pages)
 
     async def get_kwargs_from_page(self, page: int) -> Dict[str, Any]:
-        value = await discord.utils.maybe_coroutine(
-            self.source.format_page, self, page
-        )
+        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
@@ -171,9 +169,7 @@ class RoboPages(discord.ui.View):
             kwargs.setdefault("content", content)
 
         self._update_labels(0)
-        self.message = await self.ctx.send(
-            **kwargs, view=self, ephemeral=ephemeral
-        )
+        self.message = await self.ctx.send(**kwargs, view=self, ephemeral=ephemeral)
 
     @discord.ui.button(label="≪", style=discord.ButtonStyle.grey)
     async def go_to_first_page(
@@ -189,9 +185,7 @@ class RoboPages(discord.ui.View):
         """go to the previous page"""
         await self.show_checked_page(interaction, self.current_page - 1)
 
-    @discord.ui.button(
-        label="Current", style=discord.ButtonStyle.grey, disabled=True
-    )
+    @discord.ui.button(label="Current", style=discord.ButtonStyle.grey, disabled=True)
     async def go_to_current_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):

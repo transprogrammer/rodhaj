@@ -17,9 +17,7 @@ config = RodhajConfig(path)
 
 BE = TypeVar("BE", bound=BaseException)
 
-REVISION_FILE = re.compile(
-    r"(?P<kind>V)(?P<version>[0-9]+)__(?P<description>.+).sql"
-)
+REVISION_FILE = re.compile(r"(?P<kind>V)(?P<version>[0-9]+)__(?P<description>.+).sql")
 POSTGRES_URI = config["postgres_uri"]
 
 CREATE_MIGRATIONS_TABLE = """
@@ -72,9 +70,7 @@ class Revision:
 
 
 class Migrations:
-    def __init__(
-        self, *, no_conn: bool = False, migrations_path: str = "migrations"
-    ):
+    def __init__(self, *, no_conn: bool = False, migrations_path: str = "migrations"):
         self.no_conn = no_conn
         self.migrations_path = migrations_path
         self.root: Path = Path(__file__).parent
@@ -197,9 +193,7 @@ async def init():
 
 
 @main.command()
-@click.option(
-    "--reason", "-r", help="The reason for this revision.", required=True
-)
+@click.option("--reason", "-r", help="The reason for this revision.", required=True)
 @coro
 async def migrate(reason: str):
     """Creates a new revision for you to edit"""
@@ -226,9 +220,7 @@ async def current():
 
 
 @main.command()
-@click.option(
-    "--sql", help="Print the SQL instead of executing it", is_flag=True
-)
+@click.option("--sql", help="Print the SQL instead of executing it", is_flag=True)
 @coro
 async def upgrade(sql):
     """Upgrade to the latest version"""
@@ -249,9 +241,7 @@ async def upgrade(sql):
 
 
 @main.command()
-@click.option(
-    "--reverse", help="Print in reverse order (oldest first).", is_flag=True
-)
+@click.option("--reverse", help="Print in reverse order (oldest first).", is_flag=True)
 @coro
 async def log(reverse):
     """Displays the revision history"""

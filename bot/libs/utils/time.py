@@ -166,9 +166,7 @@ class ShortTime:
 
     @classmethod
     async def convert(cls, ctx: RoboContext, argument: str) -> Self:
-        return cls(
-            argument, now=ctx.message.created_at, tzinfo=datetime.timezone.utc
-        )
+        return cls(argument, now=ctx.message.created_at, tzinfo=datetime.timezone.utc)
 
 
 class HumanTime:
@@ -182,9 +180,7 @@ class HumanTime:
         tzinfo: datetime.tzinfo = datetime.timezone.utc,
     ):
         now = now or datetime.datetime.now(tzinfo)
-        dt, status = self.calendar.parseDT(
-            argument, sourceTime=now, tzinfo=None
-        )
+        dt, status = self.calendar.parseDT(argument, sourceTime=now, tzinfo=None)
         if not status.hasDateOrTime:  # type: ignore (not much I could do here...)
             raise commands.BadArgument(
                 'invalid time provided, try e.g. "tomorrow" or "3 days"'
@@ -206,9 +202,7 @@ class HumanTime:
 
     @classmethod
     async def convert(cls, ctx: RoboContext, argument: str) -> Self:
-        return cls(
-            argument, now=ctx.message.created_at, tzinfo=datetime.timezone.utc
-        )
+        return cls(argument, now=ctx.message.created_at, tzinfo=datetime.timezone.utc)
 
 
 class Time(HumanTime):
@@ -281,28 +275,20 @@ class UserFriendlyTime(commands.Converter):
 
     def __init__(
         self,
-        converter: Optional[
-            Union[type[commands.Converter], commands.Converter]
-        ] = None,
+        converter: Optional[Union[type[commands.Converter], commands.Converter]] = None,
         *,
         default: Any = None,
     ):
-        if isinstance(converter, type) and issubclass(
-            converter, commands.Converter
-        ):
+        if isinstance(converter, type) and issubclass(converter, commands.Converter):
             converter = converter()
 
-        if converter is not None and not isinstance(
-            converter, commands.Converter
-        ):
+        if converter is not None and not isinstance(converter, commands.Converter):
             raise TypeError("commands.Converter subclass necessary.")
 
         self.converter: commands.Converter = converter  # type: ignore  # It doesn't understand this narrowing
         self.default: Any = default
 
-    async def convert(
-        self, ctx: RoboContext, argument: str
-    ) -> FriendlyTimeResult:
+    async def convert(self, ctx: RoboContext, argument: str) -> FriendlyTimeResult:
         calendar = HumanTime.calendar
         regex = ShortTime.compiled
         now = ctx.message.created_at
@@ -390,9 +376,7 @@ class UserFriendlyTime(commands.Converter):
             if begin == 1:
                 # check if it's quoted:
                 if argument[0] != '"':
-                    raise commands.BadArgument(
-                        "Expected quote before time input..."
-                    )
+                    raise commands.BadArgument("Expected quote before time input...")
 
                 if not (end < len(argument) and argument[end] == '"'):
                     raise commands.BadArgument(

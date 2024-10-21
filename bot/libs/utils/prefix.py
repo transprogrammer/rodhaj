@@ -10,9 +10,7 @@ if TYPE_CHECKING:
 
 
 @alru_cache(maxsize=1024)
-async def get_prefix(
-    bot: Rodhaj, message: discord.Message
-) -> Union[str, list[str]]:
+async def get_prefix(bot: Rodhaj, message: discord.Message) -> Union[str, list[str]]:
     """Obtains the prefix for the guild
 
     This coroutine is heavily cached in order to reduce database calls

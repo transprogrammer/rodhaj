@@ -72,9 +72,7 @@ class ReplyEmbed(discord.Embed):
         kwargs.setdefault("timestamp", discord.utils.utcnow())
         super().__init__(**kwargs)
         self.set_footer(text="Sent at")
-        self.set_author(
-            name=author.global_name, icon_url=author.display_avatar.url
-        )
+        self.set_author(name=author.global_name, icon_url=author.display_avatar.url)
 
 
 class Tickets(commands.Cog):
@@ -93,9 +91,7 @@ class Tickets(commands.Cog):
 
     ### Tag selection utils
 
-    def add_in_progress_tag(
-        self, author_id: int, tags: ReservedTags
-    ) -> ReservedTags:
+    def add_in_progress_tag(self, author_id: int, tags: ReservedTags) -> ReservedTags:
         reserved = self.reserved_tags.setdefault(author_id, tags)
         return reserved
 
@@ -144,9 +140,7 @@ class Tickets(commands.Cog):
         tags = thread.applied_tags
         solved_tag = self.get_solved_tag(thread.parent)
 
-        if solved_tag is not None and not any(
-            tag.id == solved_tag.id for tag in tags
-        ):
+        if solved_tag is not None and not any(tag.id == solved_tag.id for tag in tags):
             tags.append(solved_tag)
 
         locked_thread = await thread.edit(
@@ -161,9 +155,7 @@ class Tickets(commands.Cog):
         tags = thread.applied_tags
         locked_tag = self.get_locked_tag(thread.parent)
 
-        if locked_tag is not None and not any(
-            tag.id == locked_tag.id for tag in tags
-        ):
+        if locked_tag is not None and not any(tag.id == locked_tag.id for tag in tags):
             tags.insert(0, locked_tag)
 
         return await thread.edit(applied_tags=tags, locked=True, reason=reason)
@@ -175,9 +167,7 @@ class Tickets(commands.Cog):
         tags = thread.applied_tags
         locked_tag = self.get_locked_tag(thread.parent)
 
-        if locked_tag is not None and any(
-            tag.id == locked_tag.id for tag in tags
-        ):
+        if locked_tag is not None and any(tag.id == locked_tag.id for tag in tags):
             tags.remove(locked_tag)
 
         return await thread.edit(applied_tags=tags, locked=False, reason=reason)
@@ -208,9 +198,7 @@ class Tickets(commands.Cog):
     async def notify_finished_ticket(self, ctx: RoboContext, owner_id: int):
         # We know that an admin must have closed it
         if await self.can_admin_close_ticket(ctx):
-            user = self.bot.get_user(owner_id) or (
-                await self.bot.fetch_user(owner_id)
-            )
+            user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
             user_description = f"The ticket is now closed. In order to make a new one, please DM Rodhaj with a new message to make a new ticket. (Hint: You can check if you have an active ticket by using the `{ctx.prefix}is_active` command)"
             await user.send(embed=ClosedEmbed(description=user_description))
             return
@@ -222,9 +210,7 @@ class Tickets(commands.Cog):
 
     ### Creation of tickets
 
-    async def create_ticket(
-        self, ticket: TicketThread
-    ) -> Optional[TicketOutput]:
+    async def create_ticket(self, ticket: TicketThread) -> Optional[TicketOutput]:
         query = """
         SELECT ticket_channel_id
         FROM guild_config
@@ -243,9 +229,9 @@ class Tickets(commands.Cog):
             return
 
         # Should fetch channel and add to cache if not found
-        tc = self.bot.get_channel(
+        tc = self.bot.get_channel(ticket_channel_id) or await self.bot.fetch_channel(
             ticket_channel_id
-        ) or await self.bot.fetch_channel(ticket_channel_id)
+        )
 
         # It should be a forum channel....
         if not isinstance(tc, discord.ForumChannel):
@@ -310,9 +296,7 @@ class Tickets(commands.Cog):
 
     ### Obtaining owner of tickets
     @alru_cache()
-    async def get_ticket_owner_id(
-        self, thread_id: int
-    ) -> Optional[discord.User]:
+    async def get_ticket_owner_id(self, thread_id: int) -> Optional[discord.User]:
         query = """
         SELECT owner_id
         FROM tickets
@@ -322,9 +306,7 @@ class Tickets(commands.Cog):
         if owner_id is None:
             self.get_ticket_owner_id.cache_invalidate(thread_id)
             return None
-        user = self.bot.get_user(owner_id) or (
-            await self.bot.fetch_user(owner_id)
-        )
+        user = self.bot.get_user(owner_id) or (await self.bot.fetch_user(owner_id))
         return user
 
     ### Misc Utils
@@ -370,9 +352,7 @@ class Tickets(commands.Cog):
     @is_ticket_or_dm()
     @bot_check_permissions(manage_threads=True)
     @commands.cooldown(1, 20, commands.BucketType.channel)
-    @commands.hybrid_command(
-        name="close", aliases=["solved", "closed", "resolved"]
-    )
+    @commands.hybrid_command(name="close", aliases=["solved", "closed", "resolved"])
     async def close(self, ctx: RoboContext) -> None:
         """Closes a ticket
 
@@ -408,12 +388,8 @@ class Tickets(commands.Cog):
                     )
                     return
                 await conn.execute(query, closed_ticket.id, owner_id)
-                get_cached_thread.cache_invalidate(
-                    self.bot, owner_id, self.pool
-                )
-                get_partial_ticket.cache_invalidate(
-                    self.bot, owner_id, self.pool
-                )
+                get_cached_thread.cache_invalidate(self.bot, owner_id, self.pool)
+                get_partial_ticket.cache_invalidate(self.bot, owner_id, self.pool)
                 self.get_ticket_owner_id.cache_invalidate(closed_ticket.id)
                 await self.notify_finished_ticket(ctx, owner_id)
 
@@ -435,9 +411,7 @@ class Tickets(commands.Cog):
         if ticket_owner is None:
             await ctx.send("No owner could be found for the current ticket")
             return
-        partial_ticket_owner = await get_partial_ticket(
-            self.bot, ticket_owner.id
-        )
+        partial_ticket_owner = await get_partial_ticket(self.bot, ticket_owner.id)
 
         dispatcher = GuildWebhookDispatcher(self.bot, ctx.guild.id)
         tw = await dispatcher.get_ticket_webhook()
@@ -455,9 +429,7 @@ class Tickets(commands.Cog):
                 and partial_ticket_owner.locked
                 and ctx.channel.locked
             ):
-                await ctx.send(
-                    "This ticket is locked. You cannot reply in this ticket"
-                )
+                await ctx.send("This ticket is locked. You cannot reply in this ticket")
                 return
 
             # May hit the ratelimit hard. Note this
@@ -486,9 +458,7 @@ class Tickets(commands.Cog):
     async def ticket_info(self, ctx: RoboContext) -> None:
         """Provides information about the current ticket"""
         ticket = await get_cached_thread(self.bot, ctx.author.id, self.pool)
-        partial_ticket = await get_partial_ticket(
-            self.bot, ctx.author.id, self.pool
-        )
+        partial_ticket = await get_partial_ticket(self.bot, ctx.author.id, self.pool)
         if ticket is None or partial_ticket.id is None:
             await ctx.send(
                 "You have no active tickets. Please send a message to Rodhaj to get started"
@@ -504,17 +474,13 @@ class Tickets(commands.Cog):
         embed = Embed()
         embed.title = f"{TICKET_EMOJI} {ticket.thread.name}"
         embed.description = formatted_tags
-        embed.add_field(
-            name="Is Active", value=ticket is not None, inline=False
-        )
+        embed.add_field(name="Is Active", value=ticket is not None, inline=False)
         embed.add_field(
             name="Is Closed",
             value=ticket.thread.archived and ticket.thread.locked,
             inline=False,
         )
-        embed.add_field(
-            name="Ticket Owner", value=ticket_owner.mention, inline=False
-        )
+        embed.add_field(name="Ticket Owner", value=ticket_owner.mention, inline=False)
         embed.add_field(
             name="Associated Guild",
             value=ticket.source_guild.name,
@@ -566,9 +532,7 @@ class Tickets(commands.Cog):
                 title="\U0001f512 Ticket Closed",
                 color=discord.Color.from_rgb(194, 163, 255),
             )
-            embed.description = (
-                f"The ticket has closed at {format_dt(utcnow())}"
-            )
+            embed.description = f"The ticket has closed at {format_dt(utcnow())}"
             if author is not None:
                 embed.add_field(name="Closed By", value=author.mention)
             embed.add_field(name="Owner", value=user.mention)

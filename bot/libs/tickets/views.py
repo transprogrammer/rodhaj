@@ -87,9 +87,7 @@ class TicketTagsSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction[Rodhaj]) -> None:
         values = self.values
-        in_progress_tag = self.tickets_cog.reserved_tags.get(
-            interaction.user.id
-        )
+        in_progress_tag = self.tickets_cog.reserved_tags.get(interaction.user.id)
         if in_progress_tag is None:
             await interaction.response.send_message(
                 "Are there really any tags cached?", ephemeral=True
@@ -167,9 +165,7 @@ class TicketConfirmView(RoboView):
 
         self.stop()
 
-    async def get_or_fetch_member(
-        self, member_id: int
-    ) -> Optional[discord.Member]:
+    async def get_or_fetch_member(self, member_id: int) -> Optional[discord.Member]:
         member = self.guild.get_member(member_id)
         if member is not None:
             return member
@@ -200,18 +196,13 @@ class TicketConfirmView(RoboView):
 
         dict_status = {"title": status.title, "tags": status.tags}
         formatted_status = "\n".join(
-            f"{self.tick(v.is_set())} - {k.title()}"
-            for k, v in dict_status.items()
+            f"{self.tick(v.is_set())} - {k.title()}" for k, v in dict_status.items()
         )
 
         embed = Embed()
         embed.title = "\U00002753 Status Checklist"
-        embed.description = (
-            f"The current status is shown below:\n\n{formatted_status}"
-        )
-        embed.set_footer(
-            text="\U00002705 = Completed | \U0000274c = Incomplete"
-        )
+        embed.description = f"The current status is shown below:\n\n{formatted_status}"
+        embed.set_footer(text="\U00002705 = Completed | \U0000274c = Incomplete")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(
@@ -240,11 +231,7 @@ class TicketConfirmView(RoboView):
 
         thread_display_id = uuid.uuid4()
         thread_name = f"{author.display_name} | {thread_display_id}"
-        title = (
-            self._modal.input
-            if self._modal and self._modal.input
-            else thread_name
-        )
+        title = self._modal.input if self._modal and self._modal.input else thread_name
 
         tags = self.cog.reserved_tags.get(interaction.user.id)
         status = self.cog.in_progress_tickets.get(interaction.user.id)
@@ -266,9 +253,7 @@ class TicketConfirmView(RoboView):
             )
             return
 
-        if (
-            self.guild.created_at - interaction.created_at
-        ) < guild_settings.guild_age:
+        if (self.guild.created_at - interaction.created_at) < guild_settings.guild_age:
             await interaction.response.send_message(
                 "The guild is too young in order to utilize Rodhaj.",
                 ephemeral=True,
@@ -276,9 +261,7 @@ class TicketConfirmView(RoboView):
             return
         elif potential_member:  # Since we are checking join times, if we don't have the proper member, we can only skip it.
             joined_at = potential_member.joined_at or discord.utils.utcnow()
-            if (
-                joined_at - interaction.created_at
-            ) < guild_settings.account_age:
+            if (joined_at - interaction.created_at) < guild_settings.account_age:
                 await interaction.response.send_message(
                     "This account joined the server too soon in order to utilize Rodhaj.",
                     ephemeral=True,
@@ -288,8 +271,7 @@ class TicketConfirmView(RoboView):
         if not status.title.is_set() or not status.tags.is_set():
             dict_status = {"title": status.title, "tags": status.tags}
             formatted_status = "\n".join(
-                f"{self.tick(v.is_set())} - {k.title()}"
-                for k, v in dict_status.items()
+                f"{self.tick(v.is_set())} - {k.title()}" for k, v in dict_status.items()
             )
 
             embed = ErrorEmbed()
@@ -304,9 +286,7 @@ class TicketConfirmView(RoboView):
                 "\n\nNote: In order to know, refer to the status checklist. "
                 'This can be found by clicking the "See Checklist" button. '
             )
-            embed.set_footer(
-                text="\U00002705 = Complete | \U0000274c = Incomplete"
-            )
+            embed.set_footer(text="\U00002705 = Complete | \U0000274c = Incomplete")
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
