@@ -8,7 +8,7 @@ pre-commit:
       glob: "*.{js,ts,jsx,tsx}"
       staged_files: true
       run: ruff check {staged_files} --fix --exit-non-zero-on-fix --config pyproject.toml
-    ruff:
+    ruff-fmt:
       glob: "*.{js,ts,jsx,tsx}"
       staged_files: true
       run: ruff format {staged_files} --config pyproject.toml
