@@ -9,11 +9,11 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
 discord-py = {extras = ["speed"], version = "^2.4.0"}
-uvloop = {markers = "sys_platform != \"win32\"", version = "^0.20.0"}
+uvloop = {markers = "sys_platform != \"win32\"", version = "^0.21.0"}
 winloop = {markers = "sys_platform == \"win32\"", version = "^0.1.6"}
-asyncpg = "^0.29.0"
+asyncpg = "^0.30.0"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
-psutil = "^6.0.0"
+psutil = "^6.1.0"
 pygit2 = "^1.15.1"
 python-dateutil = "^2.9.0"
 click = "^8.1.7"
