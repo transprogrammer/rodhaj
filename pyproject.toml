@@ -34,7 +34,7 @@ humanize = "^4.11.0"
 # https://python-poetry.org/docs/dependency-specification/
 pre-commit = "^4"
 pyright = "^1.1"
-ruff = "^0.6"
+ruff = "^0.7"
 tox = "^4"
 
 [tool.poetry.group.docs.dependencies]
