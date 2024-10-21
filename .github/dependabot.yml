@@ -13,13 +13,6 @@ updates:
       prefix: "[pip]"
       include: "scope"
     target-branch: "main"
-    ignore:
-      # I've chose to ignroe pyright from Dependabot
-      # As most of the time, it's pulled from upstream, which is Microsoft
-      # Most of the time there isn't much changes that need to be addressed
-      # Poetry should always install the latest version instead
-      - dependency-name: "pyright"
-        update-types: ["version-update:semver-patch"]
     groups:
       dev-deps:
         dependency-type: "development"

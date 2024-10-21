@@ -99,7 +99,11 @@ class Rodhaj(commands.Bot):
     ### Bot-related overrides
 
     async def get_context(
-        self, origin: Union[discord.Interaction, discord.Message], /, *, cls=RoboContext
+        self,
+        origin: Union[discord.Interaction, discord.Message],
+        /,
+        *,
+        cls=RoboContext,
     ) -> RoboContext:
         return await super().get_context(origin, cls=cls)
 
@@ -119,7 +123,9 @@ class Rodhaj(commands.Bot):
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
             if not isinstance(original, discord.HTTPException):
-                self.logger.exception("In %s:", ctx.command.qualified_name, exc_info=original)  # type: ignore
+                self.logger.exception(
+                    "In %s:", ctx.command.qualified_name, exc_info=original # type: ignore
+                )
         elif isinstance(error, commands.BadArgument):
             await ctx.send(str(error))
 

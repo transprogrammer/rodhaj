@@ -96,7 +96,9 @@ class Utilities(commands.Cog):
             f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}"
         )
         embed = Embed()
-        embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)  # type: ignore
+        embed.set_author(
+            name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url
+        )  # type: ignore
         embed.title = "Rodhaj"
         embed.description = (
             "Rodhaj is a modern, improved ModMail bot designed exclusively for "
@@ -114,7 +116,8 @@ class Utilities(commands.Cog):
             name="User", value=f"{total_members} total\n{total_unique} unique"
         )
         embed.add_field(
-            name="Process", value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU"
+            name="Process",
+            value=f"{memory_usage:.2f} MiB\n{cpu_usage:.2f}% CPU",
         )
         embed.add_field(
             name="Active Tickets", value=await self.fetch_num_active_tickets()
@@ -133,7 +136,9 @@ class Utilities(commands.Cog):
 
         embed = Embed()
         embed.add_field(
-            name="DB Latency", value=f"```{db_ping * 1000:.2f}ms```", inline=False
+            name="DB Latency",
+            value=f"```{db_ping * 1000:.2f}ms```",
+            inline=False,
         )
         embed.add_field(
             name="Websocket Latency",

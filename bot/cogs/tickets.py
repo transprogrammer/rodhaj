@@ -281,7 +281,9 @@ class Tickets(commands.Cog):
                     reason=f"Failed to create ticket (User ID: {ticket.user.id})",
                 )
                 return TicketOutput(
-                    status=False, ticket=created_ticket, msg="Could not create ticket"
+                    status=False,
+                    ticket=created_ticket,
+                    msg="Could not create ticket",
                 )
             else:
                 self.bot.metrics.features.active_tickets.inc()
@@ -317,7 +319,8 @@ class Tickets(commands.Cog):
         await ctx.message.add_reaction(discord.PartialEmoji(name="\U00002705"))
 
     def get_solved_tag(
-        self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
+        self,
+        channel: Optional[Union[discord.ForumChannel, discord.TextChannel]],
     ):
         if not isinstance(channel, discord.ForumChannel):
             return None
@@ -330,7 +333,8 @@ class Tickets(commands.Cog):
         return solved_tag
 
     def get_locked_tag(
-        self, channel: Optional[Union[discord.ForumChannel, discord.TextChannel]]
+        self,
+        channel: Optional[Union[discord.ForumChannel, discord.TextChannel]],
     ):
         if not isinstance(channel, discord.ForumChannel):
             return None
@@ -396,7 +400,10 @@ class Tickets(commands.Cog):
     @commands.cooldown(10, 12, commands.BucketType.member)
     @commands.command(name="reply", aliases=["r"])
     async def reply(
-        self, ctx: GuildContext, *, message: Annotated[str, commands.clean_content]
+        self,
+        ctx: GuildContext,
+        *,
+        message: Annotated[str, commands.clean_content],
     ) -> None:
         """Replies back to the owner of the active ticket with a message"""
         ticket_owner = await self.get_ticket_owner_id(ctx.channel.id)
@@ -475,9 +482,15 @@ class Tickets(commands.Cog):
         )
         embed.add_field(name="Ticket Owner", value=ticket_owner.mention, inline=False)
         embed.add_field(
-            name="Associated Guild", value=ticket.source_guild.name, inline=False
+            name="Associated Guild",
+            value=ticket.source_guild.name,
+            inline=False,
         )
-        embed.add_field(name="Created At", value=format_dt(ticket.thread.created_at), inline=False)  # type: ignore
+        embed.add_field(
+            name="Created At",
+            value=format_dt(ticket.thread.created_at),
+            inline=False,
+        )  # type: ignore
         await ctx.send(embed=embed)
 
     # As the guild has an entry in the cache,

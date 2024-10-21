@@ -187,7 +187,8 @@ async def init():
         except Exception:
             traceback.print_exc()
             click.secho(
-                "failed to initialize and apply migrations due to error", fg="red"
+                "failed to initialize and apply migrations due to error",
+                fg="red",
             )
 
 
@@ -202,7 +203,8 @@ async def migrate(reason: str):
                 "an unapplied migration already exists for the next version, exiting"
             )
             click.secho(
-                "hint: apply pending migrations with the `upgrade` command", bold=True
+                "hint: apply pending migrations with the `upgrade` command",
+                bold=True,
             )
             return
         revision = mg.create_revision(reason)
@@ -230,7 +232,8 @@ async def upgrade(sql):
         try:
             applied = await mg.upgrade()
             click.secho(
-                f"Applied {applied} revisions(s) (Current: V{mg.version})", fg="green"
+                f"Applied {applied} revisions(s) (Current: V{mg.version})",
+                fg="green",
             )
         except Exception:
             traceback.print_exc()

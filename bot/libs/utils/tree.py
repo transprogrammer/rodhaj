@@ -23,6 +23,8 @@ class RodhajCommandTree(app_commands.CommandTree):
         return True
 
     async def on_error(
-        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError,
     ) -> None:
         await interaction.response.send_message(embed=FullErrorEmbed(error))

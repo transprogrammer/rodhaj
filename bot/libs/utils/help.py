@@ -14,7 +14,7 @@ from .pages import RoboPages
 
 
 def process_perms_name(
-    command: Union[commands.Group, commands.Command]
+    command: Union[commands.Group, commands.Command],
 ) -> Optional[str]:
     merge_list = []
     if (

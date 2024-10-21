@@ -237,7 +237,8 @@ class TicketConfirmView(RoboView):
         status = self.cog.in_progress_tickets.get(interaction.user.id)
         if tags is None or status is None:
             await interaction.response.send_message(
-                "Unable to obtain reserved tags and in progress tags", ephemeral=True
+                "Unable to obtain reserved tags and in progress tags",
+                ephemeral=True,
             )
             return
 
@@ -254,12 +255,11 @@ class TicketConfirmView(RoboView):
 
         if (self.guild.created_at - interaction.created_at) < guild_settings.guild_age:
             await interaction.response.send_message(
-                "The guild is too young in order to utilize Rodhaj.", ephemeral=True
+                "The guild is too young in order to utilize Rodhaj.",
+                ephemeral=True,
             )
             return
-        elif (
-            potential_member
-        ):  # Since we are checking join times, if we don't have the proper member, we can only skip it.
+        elif potential_member:  # Since we are checking join times, if we don't have the proper member, we can only skip it.
             joined_at = potential_member.joined_at or discord.utils.utcnow()
             if (joined_at - interaction.created_at) < guild_settings.account_age:
                 await interaction.response.send_message(

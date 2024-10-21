@@ -635,7 +635,9 @@ class Config(commands.Cog):
                 name="rodhaj", overwrites=rodhaj_overwrites, position=0
             )
             logging_channel = await rodhaj_category.create_text_channel(
-                name=flags.log_name or "rodhaj-logs", reason=lgc_reason, position=0
+                name=flags.log_name or "rodhaj-logs",
+                reason=lgc_reason,
+                position=0,
             )
             lgc_webhook = await logging_channel.create_webhook(
                 name="Rodhaj Ticket Logs", avatar=avatar_bytes
@@ -829,7 +831,8 @@ class Config(commands.Cog):
         type: Literal["guild", "account"],
         *,
         duration: Annotated[
-            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
+            FriendlyTimeResult,
+            UserFriendlyTime(commands.clean_content, default="…"),
         ],
     ) -> None:
         """Sets an minimum duration for age-related options
@@ -890,7 +893,11 @@ class Config(commands.Cog):
         value="Boolean option to set the configuration",
     )
     async def config_toggle(
-        self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter], *, value: bool
+        self,
+        ctx: GuildContext,
+        key: Annotated[str, ConfigKeyConverter],
+        *,
+        value: bool,
     ) -> None:
         """Toggles an boolean option for configuration
 
