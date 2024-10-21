@@ -12,5 +12,9 @@ class VersionInfo(NamedTuple):
         return f"{self.major}.{self.minor}.{self.micro}-{self.releaselevel}"
 
 
-EXTENSIONS = [module.name for module in iter_modules(__path__, f"{__package__}.")]
-VERSION: VersionInfo = VersionInfo(major=0, minor=3, micro=1, releaselevel="final")
+EXTENSIONS = [
+    module.name for module in iter_modules(__path__, f"{__package__}.")
+]
+VERSION: VersionInfo = VersionInfo(
+    major=0, minor=3, micro=1, releaselevel="final"
+)

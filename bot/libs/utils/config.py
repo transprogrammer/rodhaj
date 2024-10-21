@@ -16,7 +16,9 @@ class RodhajConfig(Generic[_T]):
     def load_from_file(self) -> None:
         try:
             with open(self.path, "r") as f:
-                self._config: dict[str, Union[_T, Any]] = yaml.safe_load(f.read())
+                self._config: dict[str, Union[_T, Any]] = yaml.safe_load(
+                    f.read()
+                )
         except FileNotFoundError:
             self._config = {}
 

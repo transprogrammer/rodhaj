@@ -20,7 +20,9 @@ class RoboView(discord.ui.View):
         self.ctx = ctx
         self.message: Optional[discord.Message]
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         if interaction.user and interaction.user.id in (
             self.ctx.bot.application.owner.id,  # type: ignore
             self.ctx.author.id,
@@ -46,5 +48,7 @@ class RoboView(discord.ui.View):
         if self.message:
             embed = ErrorEmbed()
             embed.title = "\U00002757 Timed Out"
-            embed.description = "Timed out waiting for a response. Cancelling action..."
+            embed.description = (
+                "Timed out waiting for a response. Cancelling action..."
+            )
             await self.message.edit(embed=embed, view=None)

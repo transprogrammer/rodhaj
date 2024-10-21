@@ -74,7 +74,9 @@ class Admin(commands.Cog, command_attrs=dict(hidden=True)):
 
     def format_results(self, statuses: list) -> str:
         desc = "\U00002705 - Successful reload | \U0000274c - Failed reload | \U000023e9 - Skipped\n\n"
-        status = "\n".join(f"- {status}: `{module}`" for status, module in statuses)
+        status = "\n".join(
+            f"- {status}: `{module}`" for status, module in statuses
+        )
         desc += status
         return desc
 
@@ -159,11 +161,10 @@ class Admin(commands.Cog, command_attrs=dict(hidden=True)):
         modules = self.find_modules_from_git(stdout)
 
         mods_text = "\n".join(
-            f"{index}. `{module}`" for index, (_, module) in enumerate(modules, start=1)
+            f"{index}. `{module}`"
+            for index, (_, module) in enumerate(modules, start=1)
         )
-        prompt_text = (
-            f"This will update the following modules, are you sure?\n{mods_text}"
-        )
+        prompt_text = f"This will update the following modules, are you sure?\n{mods_text}"
 
         confirm = await ctx.prompt(prompt_text)
         if not confirm:

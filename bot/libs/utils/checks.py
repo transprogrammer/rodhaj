@@ -88,7 +88,10 @@ def is_manager():
 
 def is_mod():
     return check_permissions(
-        ban_members=True, manage_messages=True, kick_members=True, moderate_members=True
+        ban_members=True,
+        manage_messages=True,
+        kick_members=True,
+        moderate_members=True,
     )
 
 

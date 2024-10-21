@@ -99,7 +99,11 @@ class Rodhaj(commands.Bot):
     ### Bot-related overrides
 
     async def get_context(
-        self, origin: Union[discord.Interaction, discord.Message], /, *, cls=RoboContext
+        self,
+        origin: Union[discord.Interaction, discord.Message],
+        /,
+        *,
+        cls=RoboContext,
     ) -> RoboContext:
         return await super().get_context(origin, cls=cls)
 
@@ -111,7 +115,9 @@ class Rodhaj(commands.Bot):
             return
 
         if isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send("This command cannot be used in private messages")
+            await ctx.author.send(
+                "This command cannot be used in private messages"
+            )
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(
                 f"You are missing the following argument(s): {error.param.name}"
@@ -119,7 +125,9 @@ class Rodhaj(commands.Bot):
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
             if not isinstance(original, discord.HTTPException):
-                self.logger.exception("In %s:", ctx.command.qualified_name, exc_info=original)  # type: ignore
+                self.logger.exception(
+                    "In %s:", ctx.command.qualified_name, exc_info=original
+                )  # type: ignore
         elif isinstance(error, commands.BadArgument):
             await ctx.send(str(error))
 
@@ -174,7 +182,9 @@ class Rodhaj(commands.Bot):
                 return
 
             author = message.author
-            potential_ticket = await get_partial_ticket(self, author.id, self.pool)
+            potential_ticket = await get_partial_ticket(
+                self, author.id, self.pool
+            )
 
             # Represents that there is no active ticket
             if potential_ticket.id is None:
@@ -228,7 +238,9 @@ class Rodhaj(commands.Bot):
             cached_thread = await get_cached_thread(self, author.id, self.pool)
 
             if cached_thread is not None:
-                dispatcher = GuildWebhookDispatcher(self, cached_thread.source_guild.id)
+                dispatcher = GuildWebhookDispatcher(
+                    self, cached_thread.source_guild.id
+                )
                 webhook = await dispatcher.get_ticket_webhook()
                 if webhook is not None:
                     await webhook.send(
@@ -260,7 +272,9 @@ class Rodhaj(commands.Bot):
             prom_port = self._prometheus.get("port", 8555)
 
             await self.metrics.start(host=prom_host, port=prom_port)
-            self.logger.info("Prometheus Server started on %s:%s", prom_host, prom_port)
+            self.logger.info(
+                "Prometheus Server started on %s:%s", prom_host, prom_port
+            )
 
             self.metrics.fill()
 

@@ -50,7 +50,9 @@ class RoboPages(discord.ui.View):
             self.add_item(self.stop_pages)
 
     async def get_kwargs_from_page(self, page: int) -> Dict[str, Any]:
-        value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
+        value = await discord.utils.maybe_coroutine(
+            self.source.format_page, self, page
+        )
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
@@ -125,7 +127,8 @@ class RoboPages(discord.ui.View):
         ):
             return True
         await interaction.response.send_message(
-            "This pagination menu cannot be controlled by you, sorry!", ephemeral=True
+            "This pagination menu cannot be controlled by you, sorry!",
+            ephemeral=True,
         )
         return False
 
@@ -134,7 +137,10 @@ class RoboPages(discord.ui.View):
             await self.message.edit(view=None)
 
     async def on_error(
-        self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item,
     ) -> None:
         if interaction.response.is_done():
             await interaction.followup.send(
@@ -148,7 +154,10 @@ class RoboPages(discord.ui.View):
     async def start(
         self, *, content: Optional[str] = None, ephemeral: bool = False
     ) -> None:
-        if self.check_embeds and not self.ctx.channel.permissions_for(self.ctx.me).embed_links:  # type: ignore
+        if (
+            self.check_embeds
+            and not self.ctx.channel.permissions_for(self.ctx.me).embed_links
+        ):  # type: ignore
             await self.ctx.send(
                 "Bot does not have embed links permission in this channel.",
                 ephemeral=True,
@@ -162,7 +171,9 @@ class RoboPages(discord.ui.View):
             kwargs.setdefault("content", content)
 
         self._update_labels(0)
-        self.message = await self.ctx.send(**kwargs, view=self, ephemeral=ephemeral)
+        self.message = await self.ctx.send(
+            **kwargs, view=self, ephemeral=ephemeral
+        )
 
     @discord.ui.button(label="≪", style=discord.ButtonStyle.grey)
     async def go_to_first_page(
@@ -178,7 +189,9 @@ class RoboPages(discord.ui.View):
         """go to the previous page"""
         await self.show_checked_page(interaction, self.current_page - 1)
 
-    @discord.ui.button(label="Current", style=discord.ButtonStyle.grey, disabled=True)
+    @discord.ui.button(
+        label="Current", style=discord.ButtonStyle.grey, disabled=True
+    )
     async def go_to_current_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):

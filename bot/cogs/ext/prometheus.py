@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands, tasks
 
 try:
-
     from prometheus_async.aio.web import start_http_server
     from prometheus_client import Counter, Enum, Gauge, Info, Summary
 except ImportError:
@@ -37,7 +36,8 @@ class FeatureCollector:
             f"{METRIC_PREFIX}active_tickets", "Amount of active tickets"
         )
         self.closed_tickets = Counter(
-            f"{METRIC_PREFIX}closed_tickets", "Number of closed tickets in this session"
+            f"{METRIC_PREFIX}closed_tickets",
+            "Number of closed tickets in this session",
         )
         self.locked_tickets = Gauge(
             f"{METRIC_PREFIX}locked_tickets",
@@ -50,7 +50,14 @@ class FeatureCollector:
 
 # Maybe load all of these from an json file next time
 class Metrics:
-    __slots__ = ("bot", "connected", "latency", "commands", "version", "features")
+    __slots__ = (
+        "bot",
+        "connected",
+        "latency",
+        "commands",
+        "version",
+        "features",
+    )
 
     def __init__(self, bot: Rodhaj):
         self.bot = bot
@@ -60,8 +67,12 @@ class Metrics:
             ["shard"],
             states=["connected", "disconnected"],
         )
-        self.latency = Gauge(f"{METRIC_PREFIX}latency", "Latency to Discord", ["shard"])
-        self.commands = Summary(f"{METRIC_PREFIX}commands", "Total commands executed")
+        self.latency = Gauge(
+            f"{METRIC_PREFIX}latency", "Latency to Discord", ["shard"]
+        )
+        self.commands = Summary(
+            f"{METRIC_PREFIX}commands", "Total commands executed"
+        )
         self.version = Info(f"{METRIC_PREFIX}version", "Versions of the bot")
         self.features = FeatureCollector(self.bot)
 

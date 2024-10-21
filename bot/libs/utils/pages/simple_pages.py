@@ -13,4 +13,6 @@ class SimplePages(RoboPages):
 
     def __init__(self, entries, *, ctx: commands.Context, per_page: int = 12):
         super().__init__(SimplePageSource(entries, per_page=per_page), ctx=ctx)
-        self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
+        self.embed = discord.Embed(
+            colour=discord.Colour.from_rgb(200, 168, 255)
+        )

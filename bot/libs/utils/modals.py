@@ -15,7 +15,9 @@ class RoboModal(discord.ui.Modal):
         super().__init__(*args, **kwargs)
         self.ctx = ctx
 
-    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+    async def interaction_check(
+        self, interaction: discord.Interaction, /
+    ) -> bool:
         if interaction.user and interaction.user.id in (
             self.ctx.bot.application.owner.id,  # type: ignore
             self.ctx.author.id,

@@ -17,7 +17,9 @@ config = RodhajConfig(path)
 
 BE = TypeVar("BE", bound=BaseException)
 
-REVISION_FILE = re.compile(r"(?P<kind>V)(?P<version>[0-9]+)__(?P<description>.+).sql")
+REVISION_FILE = re.compile(
+    r"(?P<kind>V)(?P<version>[0-9]+)__(?P<description>.+).sql"
+)
 POSTGRES_URI = config["postgres_uri"]
 
 CREATE_MIGRATIONS_TABLE = """
@@ -70,7 +72,9 @@ class Revision:
 
 
 class Migrations:
-    def __init__(self, *, no_conn: bool = False, migrations_path: str = "migrations"):
+    def __init__(
+        self, *, no_conn: bool = False, migrations_path: str = "migrations"
+    ):
         self.no_conn = no_conn
         self.migrations_path = migrations_path
         self.root: Path = Path(__file__).parent
@@ -187,12 +191,15 @@ async def init():
         except Exception:
             traceback.print_exc()
             click.secho(
-                "failed to initialize and apply migrations due to error", fg="red"
+                "failed to initialize and apply migrations due to error",
+                fg="red",
             )
 
 
 @main.command()
-@click.option("--reason", "-r", help="The reason for this revision.", required=True)
+@click.option(
+    "--reason", "-r", help="The reason for this revision.", required=True
+)
 @coro
 async def migrate(reason: str):
     """Creates a new revision for you to edit"""
@@ -202,7 +209,8 @@ async def migrate(reason: str):
                 "an unapplied migration already exists for the next version, exiting"
             )
             click.secho(
-                "hint: apply pending migrations with the `upgrade` command", bold=True
+                "hint: apply pending migrations with the `upgrade` command",
+                bold=True,
             )
             return
         revision = mg.create_revision(reason)
@@ -218,7 +226,9 @@ async def current():
 
 
 @main.command()
-@click.option("--sql", help="Print the SQL instead of executing it", is_flag=True)
+@click.option(
+    "--sql", help="Print the SQL instead of executing it", is_flag=True
+)
 @coro
 async def upgrade(sql):
     """Upgrade to the latest version"""
@@ -230,7 +240,8 @@ async def upgrade(sql):
         try:
             applied = await mg.upgrade()
             click.secho(
-                f"Applied {applied} revisions(s) (Current: V{mg.version})", fg="green"
+                f"Applied {applied} revisions(s) (Current: V{mg.version})",
+                fg="green",
             )
         except Exception:
             traceback.print_exc()
@@ -238,7 +249,9 @@ async def upgrade(sql):
 
 
 @main.command()
-@click.option("--reverse", help="Print in reverse order (oldest first).", is_flag=True)
+@click.option(
+    "--reverse", help="Print in reverse order (oldest first).", is_flag=True
+)
 @coro
 async def log(reverse):
     """Displays the revision history"""

@@ -82,7 +82,8 @@ class Blocklist:
         """
         rows = await connection.fetch(query)
         return {
-            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
+            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row))
+            for row in rows
         }
 
     async def load(self, connection: Optional[asyncpg.Connection] = None):
@@ -246,7 +247,9 @@ class ConfigEntryEmbed(Embed):
         self.title = entry.key
         self.description = entry.description
         self.add_field(name="Default", value=entry.default, inline=False)
-        self.add_field(name="Example(s)", value="\n".join(entry.examples), inline=False)
+        self.add_field(
+            name="Example(s)", value="\n".join(entry.examples), inline=False
+        )
         self.add_field(
             name="Notes",
             value="\n".join(f"- {note}" for note in entry.notes) or None,
@@ -275,7 +278,9 @@ class ConfigPageSource(menus.AsyncIteratorPageSource):
         super().__init__(self.config_iterator(entries), per_page=20)
         self.active = active
 
-    async def config_iterator(self, entries: dict[str, Any]) -> AsyncIterator[str]:
+    async def config_iterator(
+        self, entries: dict[str, Any]
+    ) -> AsyncIterator[str]:
         for key, entry in entries.items():
             result = f"**{key}:** {entry}"
             # Wtf is wrong with me - Noelle
@@ -288,7 +293,9 @@ class ConfigPageSource(menus.AsyncIteratorPageSource):
 
     async def format_page(self, menu: ConfigPages, entries: list[str]):
         pages = []
-        for _, entry in enumerate(entries, start=menu.current_page * self.per_page):
+        for _, entry in enumerate(
+            entries, start=menu.current_page * self.per_page
+        ):
             pages.append(f"{entry}")
 
         menu.embed.description = "\n".join(pages)
@@ -304,7 +311,9 @@ class ConfigPages(RoboPages):
         active: Optional[bool] = None,
     ):
         super().__init__(ConfigPageSource(entries, active), ctx=ctx)
-        self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
+        self.embed = discord.Embed(
+            colour=discord.Colour.from_rgb(200, 168, 255)
+        )
 
 
 class ConfigOptionFlags(commands.FlagConverter):
@@ -345,7 +354,9 @@ class ConfigKeyConverter(commands.Converter):
             raise RuntimeError("Unable to get Config cog")
 
         if lowered not in cog.config_keys:
-            raise commands.BadArgument(self.disambiguate(lowered, cog.config_keys))
+            raise commands.BadArgument(
+                self.disambiguate(lowered, cog.config_keys)
+            )
 
         return lowered
 
@@ -369,7 +380,9 @@ class PrefixConverter(commands.Converter):
     async def convert(self, ctx: GuildContext, argument: str):
         user_id = ctx.bot.user.id  # type: ignore # Already logged in by this time
         if argument.startswith((f"<@{user_id}>", f"<@!{user_id}>", "r>")):
-            raise commands.BadArgument("That is a reserved prefix already in use.")
+            raise commands.BadArgument(
+                "That is a reserved prefix already in use."
+            )
         if len(argument) > 100:
             raise commands.BadArgument("That prefix is too long.")
         return argument
@@ -412,10 +425,10 @@ class Config(commands.Cog):
         return config
 
     @alru_cache()
-    async def get_guild_settings(self, guild_id: int) -> Optional[GuildSettings]:
-        query = (
-            "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
-        )
+    async def get_guild_settings(
+        self, guild_id: int
+    ) -> Optional[GuildSettings]:
+        query = "SELECT account_age, guild_age, settings FROM guild_config WHERE id = $1;"
         rows = await self.pool.fetchrow(query, guild_id)
         if rows is None:
             self.get_guild_settings.cache_invalidate(guild_id)
@@ -447,7 +460,9 @@ class Config(commands.Cog):
         config_type: ConfigType,
         ctx: GuildContext,
     ):
-        current_guild_settings = await self.get_partial_guild_settings(ctx.guild.id)
+        current_guild_settings = await self.get_partial_guild_settings(
+            ctx.guild.id
+        )
 
         # If there are no guild configurations, then we have an issue here
         # we will denote this with an error
@@ -473,12 +488,20 @@ class Config(commands.Cog):
         self.get_partial_guild_settings.cache_invalidate(ctx.guild.id)
 
         command_type = "Toggled" if config_type == ConfigType.TOGGLE else "Set"
-        await ctx.send(f"{command_type} `{key}` from `{original_value}` to `{value}`")
+        await ctx.send(
+            f"{command_type} `{key}` from `{original_value}` to `{value}`"
+        )
 
     ### Blocklist utilities
 
-    async def can_be_blocked(self, ctx: GuildContext, entity: discord.Member) -> bool:
-        if entity.id == ctx.author.id or await self.bot.is_owner(entity) or entity.bot:
+    async def can_be_blocked(
+        self, ctx: GuildContext, entity: discord.Member
+    ) -> bool:
+        if (
+            entity.id == ctx.author.id
+            or await self.bot.is_owner(entity)
+            or entity.bot
+        ):
             return False
 
         # Hierarchy check
@@ -579,9 +602,7 @@ class Config(commands.Cog):
                 manage_threads=True,
             ),
         }
-        lgc_reason = (
-            f"{ctx.author} (ID: {ctx.author.id}) has created the Rodhaj logs channel"
-        )
+        lgc_reason = f"{ctx.author} (ID: {ctx.author.id}) has created the Rodhaj logs channel"
 
         # The rationale behind the restriction of posts is to make sure that
         # people don't create posts of their own, thus messing up the code for the bot
@@ -605,7 +626,9 @@ class Config(commands.Cog):
             ),
             discord.ForumTag(
                 name="Serious",
-                emoji=discord.PartialEmoji(name="\U0001f610"),  # U+1F610 Neutral Face
+                emoji=discord.PartialEmoji(
+                    name="\U0001f610"
+                ),  # U+1F610 Neutral Face
             ),
             discord.ForumTag(
                 name="Private",
@@ -635,7 +658,9 @@ class Config(commands.Cog):
                 name="rodhaj", overwrites=rodhaj_overwrites, position=0
             )
             logging_channel = await rodhaj_category.create_text_channel(
-                name=flags.log_name or "rodhaj-logs", reason=lgc_reason, position=0
+                name=flags.log_name or "rodhaj-logs",
+                reason=lgc_reason,
+                position=0,
             )
             lgc_webhook = await logging_channel.create_webhook(
                 name="Rodhaj Ticket Logs", avatar=avatar_bytes
@@ -707,9 +732,7 @@ class Config(commands.Cog):
         confirm = await ctx.prompt(msg, timeout=300.0, delete_after=True)
         if confirm:
             if guild_config is None:
-                msg = (
-                    "Could not find the guild config. Perhaps Rodhaj is not set up yet?"
-                )
+                msg = "Could not find the guild config. Perhaps Rodhaj is not set up yet?"
                 await ctx.send(msg)
                 return
 
@@ -786,7 +809,9 @@ class Config(commands.Cog):
             await ctx.send(msg)
             return
 
-        pages = ConfigPages(guild_settings.to_dict(), ctx=ctx, active=flags.active)
+        pages = ConfigPages(
+            guild_settings.to_dict(), ctx=ctx, active=flags.active
+        )
         await pages.start()
 
     @is_manager()
@@ -798,7 +823,9 @@ class Config(commands.Cog):
     ) -> None:
         """Shows help information for different configuration options"""
         # Because we are using the converter, all options are guaranteed to be correct
-        embed = ConfigEntryEmbed(ConfigHelpEntry(key=key, **self.options_help[key]))
+        embed = ConfigEntryEmbed(
+            ConfigHelpEntry(key=key, **self.options_help[key])
+        )
         await ctx.send(embed=embed)
 
     @is_manager()
@@ -829,7 +856,8 @@ class Config(commands.Cog):
         type: Literal["guild", "account"],
         *,
         duration: Annotated[
-            FriendlyTimeResult, UserFriendlyTime(commands.clean_content, default="…")
+            FriendlyTimeResult,
+            UserFriendlyTime(commands.clean_content, default="…"),
         ],
     ) -> None:
         """Sets an minimum duration for age-related options
@@ -880,7 +908,9 @@ class Config(commands.Cog):
             )
             return
 
-        await self.set_guild_settings(key, value, config_type=ConfigType.SET, ctx=ctx)
+        await self.set_guild_settings(
+            key, value, config_type=ConfigType.SET, ctx=ctx
+        )
 
     @is_manager()
     @commands.guild_only()
@@ -890,7 +920,11 @@ class Config(commands.Cog):
         value="Boolean option to set the configuration",
     )
     async def config_toggle(
-        self, ctx: GuildContext, key: Annotated[str, ConfigKeyConverter], *, value: bool
+        self,
+        ctx: GuildContext,
+        key: Annotated[str, ConfigKeyConverter],
+        *,
+        value: bool,
     ) -> None:
         """Toggles an boolean option for configuration
 
@@ -1010,7 +1044,9 @@ class Config(commands.Cog):
             get_prefix.cache_invalidate(self.bot, ctx.message)
             await ctx.send(f"Prefix updated to from `{old}` to `{new}`")
         else:
-            await ctx.send("The prefix is not in the list of prefixes for your server")
+            await ctx.send(
+                "The prefix is not in the list of prefixes for your server"
+            )
 
     @is_manager()
     @commands.guild_only()
@@ -1030,7 +1066,9 @@ class Config(commands.Cog):
         if confirm:
             await self.pool.execute(query, prefix, ctx.guild.id)
             get_prefix.cache_invalidate(self.bot, ctx.message)
-            await ctx.send(f"The prefix `{prefix}` has been successfully deleted")
+            await ctx.send(
+                f"The prefix `{prefix}` has been successfully deleted"
+            )
         elif confirm is None:
             await ctx.send("Confirmation timed out. Cancelled deletion...")
         else:
@@ -1043,7 +1081,9 @@ class Config(commands.Cog):
     # 4. Is the author themselves trying to get blocklisted?
     # This system must be addressed with care as it is extremely dangerous
     # TODO: Add an history command to view past history of entity
-    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @check_permissions(
+        manage_messages=True, manage_roles=True, moderate_members=True
+    )
     @commands.guild_only()
     @commands.hybrid_group(name="blocklist", fallback="info")
     async def blocklist(self, ctx: GuildContext) -> None:
@@ -1052,7 +1092,9 @@ class Config(commands.Cog):
         pages = BlocklistPages([entry for entry in blocklist.values()], ctx=ctx)
         await pages.start()
 
-    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @check_permissions(
+        manage_messages=True, manage_roles=True, moderate_members=True
+    )
     @commands.guild_only()
     @blocklist.command(name="add")
     @app_commands.describe(
@@ -1113,11 +1155,15 @@ class Config(commands.Cog):
                 )
                 await ctx.send(f"{entity.mention} has been blocked")
 
-    @check_permissions(manage_messages=True, manage_roles=True, moderate_members=True)
+    @check_permissions(
+        manage_messages=True, manage_roles=True, moderate_members=True
+    )
     @commands.guild_only()
     @blocklist.command(name="remove")
     @app_commands.describe(entity="The member to remove from the blocklist")
-    async def blocklist_remove(self, ctx: GuildContext, entity: discord.Member) -> None:
+    async def blocklist_remove(
+        self, ctx: GuildContext, entity: discord.Member
+    ) -> None:
         """Removes an member from the blocklist"""
         if not await self.can_be_blocked(ctx, entity):
             await ctx.send("Failed to unblock entity")
