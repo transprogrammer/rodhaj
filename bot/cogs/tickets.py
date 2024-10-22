@@ -488,9 +488,9 @@ class Tickets(commands.Cog):
         )
         embed.add_field(
             name="Created At",
-            value=format_dt(ticket.thread.created_at),
+            value=format_dt(ticket.thread.created_at),  # type: ignore
             inline=False,
-        )  # type: ignore
+        )
         await ctx.send(embed=embed)
 
     # As the guild has an entry in the cache,

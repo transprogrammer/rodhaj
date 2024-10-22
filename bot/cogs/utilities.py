@@ -46,7 +46,7 @@ class Utilities(commands.Cog):
         return f"[`{short_sha2}`](https://github.com/transprogrammer/rodhaj/commit/{commit_id}) {short} ({offset})"
 
     def get_last_commits(self, count: int = 5):
-        repo = pygit2.Repository(".git")
+        repo = pygit2.Repository(".git")  # type: ignore # It technically is
         commits = list(
             itertools.islice(repo.walk(repo.head.target, SortMode.TOPOLOGICAL), count)
         )
@@ -55,7 +55,7 @@ class Utilities(commands.Cog):
     def get_current_branch(
         self,
     ) -> str:
-        repo = pygit2.Repository(".git")
+        repo = pygit2.Repository(".git")  # type: ignore
         return repo.head.shorthand
 
     async def fetch_num_active_tickets(self) -> int:
@@ -83,6 +83,7 @@ class Utilities(commands.Cog):
         # R. Danny's way of doing it is probably close enough anyways
         memory_usage = self.process.memory_full_info().uss / 1024**2
         cpu_usage = self.process.cpu_percent() / psutil.cpu_count()
+        bot_user: discord.ClientUser = self.bot.user  # type: ignore
 
         revisions = "See [GitHub](https://github.com/transprogrammer/rodhaj)"
         working_branch = "Docker"
@@ -96,9 +97,7 @@ class Utilities(commands.Cog):
             f"Made with discord.py v{discord.__version__} | Running Python {platform.python_version()}"
         )
         embed = Embed()
-        embed.set_author(
-            name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url
-        )  # type: ignore
+        embed.set_author(name=bot_user.name, icon_url=bot_user.display_avatar.url)
         embed.title = "Rodhaj"
         embed.description = (
             "Rodhaj is a modern, improved ModMail bot designed exclusively for "

@@ -124,7 +124,9 @@ class Rodhaj(commands.Bot):
             original = error.original
             if not isinstance(original, discord.HTTPException):
                 self.logger.exception(
-                    "In %s:", ctx.command.qualified_name, exc_info=original # type: ignore
+                    "In %s:",
+                    ctx.command.qualified_name,  # type: ignore
+                    exc_info=original,
                 )
         elif isinstance(error, commands.BadArgument):
             await ctx.send(str(error))
