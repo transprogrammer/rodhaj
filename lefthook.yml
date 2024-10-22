@@ -1,14 +1,14 @@
 pre-commit:
   commands:
     bandit:
-      glob: "*.{js,ts,jsx,tsx}"
+      glob: "*.py"
       staged_files: true
       run: bandit {staged_files} -c pyproject.toml
     ruff-check:
-      glob: "*.{js,ts,jsx,tsx}"
+      glob: "*.py"
       staged_files: true
       run: ruff check {staged_files} --fix --exit-non-zero-on-fix --config pyproject.toml
     ruff-fmt:
-      glob: "*.{js,ts,jsx,tsx}"
+      glob: "*.py"
       staged_files: true
       run: ruff format {staged_files} --config pyproject.toml
