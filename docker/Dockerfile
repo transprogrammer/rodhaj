@@ -26,7 +26,7 @@ RUN adduser --disabled-password --gecos "" rodhaj \
 
 USER rodhaj
 
-ENV PATH="${PATH}:${HOME}/.local/bin"
+ENV PATH="${PATH}:/home/rodhaj/.local/bin"
 
 RUN pip install --user -r requirements.txt
 
