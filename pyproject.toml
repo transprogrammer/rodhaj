@@ -38,9 +38,9 @@ furo = "^2024.8.6"
 
 [tool.poetry.group.dev.dependencies]
 lefthook = "^1.8.2"
-pyright = "^1.1.387"
+pyright = "^1.1.388"
 bandit = {extras = ["toml"], version = "^1.7.10"}
-ruff = "^0.7.2"
+ruff = "^0.7.3"
 tox = "^4.23.2"
 
 [tool.pyright]
