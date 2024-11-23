@@ -38,8 +38,9 @@ from libs.utils.prefix import get_prefix
 from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
 
 if TYPE_CHECKING:
-    from cogs.tickets import Tickets
     from rodhaj import Rodhaj
+
+    from cogs.tickets import Tickets
 
 
 UNKNOWN_ERROR_MESSAGE = (
