@@ -6,14 +6,30 @@
 Rodhaj
 ==================================
 
+   
+
 .. toctree::
    :maxdepth: 2
    :hidden:
-   :caption: Guides 
+   :caption: Deployment Guide
 
-   deployment/index
-   user-guide/index
-   dev-guide/index
+   docker
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: User Guide 
+
+   features
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Developer Guide
+
+   dev-guide/introduction
+   dev-guide/migrating-to-yaml
+   dev-guide/faq
 
 A improved, modern version of ModMail for the Transprogrammer community.
 
@@ -47,9 +63,9 @@ Contributing
 
 If you would like to contribute to Rodhaj, please read the guide below.
 
-- :doc:`dev-guide/index`
+- :doc:`dev-guide/introduction`
 
 Next Steps
 -----------
 
-- Learn about Rodhaj's features in the :doc:`user-guide/features` guide.
+- Learn about Rodhaj's features in the :doc:`features` guide.
