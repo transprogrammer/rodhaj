@@ -3,7 +3,6 @@
 # Develoment
 lefthook>=1.7.22,<2
 pyright>=1.1.363,<2
-bandit[toml]>=1.7.10,<2
 ruff>=0.4.4,<1
 tox>=4.15.0,<5
 

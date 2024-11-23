@@ -32,7 +32,6 @@ msgspec = {git = "https://github.com/jcrist/msgspec", rev = "595c33c4a71c6d0c539
 [tool.poetry.group.dev.dependencies]
 lefthook = "^1.8.4"
 pyright = "^1.1.389"
-bandit = {extras = ["toml"], version = "^1.7.10"}
 ruff = "^0.7.4"
 tox = "^4.23.2"
 
@@ -53,12 +52,8 @@ reportMissingImports = true
 typeCheckingMode = "basic"
 reportUnnecessaryTypeIgnoreComment = "warning"
 
-[tool.bandit]
-skips = ["B311", "B101"]
-
 [tool.ruff]
 line-length = 88
-indent-width = 4
 
 [tool.ruff.lint]
 ignore = [
@@ -84,7 +79,7 @@ ignore = [
     "ISC001",
     "ISC002"
     ]
-select = ["E", "F", "N", "ASYNC", "S", "ERA"]
+select = ["E", "F", "N", "ASYNC", "S", "ERA", "I"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.isort]
