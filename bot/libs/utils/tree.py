@@ -8,7 +8,7 @@ from discord import app_commands
 from .embeds import FullErrorEmbed
 
 if TYPE_CHECKING:
-    from rodhaj import Rodhaj
+    from bot.rodhaj import Rodhaj
 
 
 # Later on if we needed global interaction checks, we can do it here

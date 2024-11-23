@@ -11,7 +11,7 @@ from discord.ext import commands
 from watchfiles import Change, awatch
 
 if TYPE_CHECKING:
-    from rodhaj import Rodhaj
+    from bot.rodhaj import Rodhaj
 
 
 class Reloader:

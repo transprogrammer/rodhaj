@@ -1,16 +1,21 @@
+from __future__ import annotations
+
 import asyncio
 import importlib
 import os
 import re
 import subprocess  # nosec # We already know this is dangerous, but it's needed
 import sys
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Greedy
-from libs.utils import RoboContext
-from rodhaj import Rodhaj
+
+if TYPE_CHECKING:
+    from libs.utils import RoboContext
+
+    from bot.rodhaj import Rodhaj
 
 GIT_PULL_REGEX = re.compile(r"\s+(?P<filename>.*)\b\s+\|\s+[\d]")
 
