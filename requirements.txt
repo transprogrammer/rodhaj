@@ -1,4 +1,5 @@
-discord.py[speed]>=2.3.2,<3
+discord.py[speed]>=2.4.0,<3
+audioop-lts>=0.2.1,<1 ; python_version>='3.13'
 uvloop>=0.19.0,<1 ; sys_platform != "win32"
 winloop>=0.1.1,<1 ; sys_platform == "win32"
 asyncpg>=0.29.0,<1
@@ -11,7 +12,7 @@ typing-extensions>=4.9.0,<5
 prometheus-client>=0.20.0,<1
 prometheus-async>=22.2.0,<23
 async-lru>=2.0.4,<3
-msgspec>=0.18.6,<1
+msgspec @ git+https://github.com/jcrist/msgspec@595c33c4a71c6d0c539b82233982a65819e240cf
 jishaku>=2.5.2,<3
 watchfiles>=0.21.0,<1
 PyYAML>=6.0.1,<7
