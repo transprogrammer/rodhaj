@@ -12,6 +12,7 @@ RUN apt-get update \
   netcat-traditional \
   tini \
   gcc \
+  libc6-dev \
   && apt-get clean
 
 WORKDIR /rodhaj
