@@ -11,6 +11,7 @@ RUN apt-get update \
   git \
   netcat-traditional \
   tini \
+  gcc \
   && apt-get clean
 
 WORKDIR /rodhaj
