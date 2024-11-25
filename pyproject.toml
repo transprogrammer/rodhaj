@@ -32,7 +32,7 @@ msgspec = {git = "https://github.com/jcrist/msgspec", rev = "595c33c4a71c6d0c539
 [tool.poetry.group.dev.dependencies]
 lefthook = "^1.8.4"
 pyright = "^1.1.389"
-ruff = "^0.7.4"
+ruff = "^0.8.0"
 tox = "^4.23.2"
 
 
