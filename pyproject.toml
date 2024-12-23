@@ -13,10 +13,10 @@ uvloop = {markers = "sys_platform != \"win32\"", version = "^0.21.0"}
 winloop = {markers = "sys_platform == \"win32\"", version = "^0.1.7"}
 asyncpg = "^0.30.0"
 discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
-psutil = "^6.1.0"
+psutil = "^6.1.1"
 pygit2 = "^1.15.1"
 python-dateutil = "^2.9.0"
-click = "^8.1.7"
+click = "^8.1.8"
 async-lru = "^2.0.4"
 jishaku = "^2.6.0"
 pyyaml = "^6.0.2"
