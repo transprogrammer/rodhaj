@@ -1084,13 +1084,13 @@ voice = ["discord.py[voice] (>=2.3.2)", "yt-dlp (>=2023.10.13)"]
 
 [[package]]
 name = "lefthook"
-version = "1.10.0"
+version = "1.10.1"
 description = "Git hooks manager. Fast, powerful, simple."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "lefthook-1.10.0-py3-none-any.whl", hash = "sha256:fb6137916b49fb86a6872506fa624734eb0a08f5ee04c98f30442c01f7ac0bd6"},
-    {file = "lefthook-1.10.0.tar.gz", hash = "sha256:0d42a693e41e3f8f15471309fb6c8a712fe3a5893237002ad21398c1d30e5741"},
+    {file = "lefthook-1.10.1-py3-none-any.whl", hash = "sha256:d2c6a751e807f253f6be1cb17905f9c9b4a332db250593890dd05231182fec45"},
+    {file = "lefthook-1.10.1.tar.gz", hash = "sha256:d618f284784e966ff7a1a71eb17c8a5b49bd36eef21a48a9780274463f513b17"},
 ]
 
 [[package]]
@@ -2546,4 +2546,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "10d2aed441b6029eb70d2e19b55386844c9b02f52aca23bcf0b9b37bd515fa0e"
+content-hash = "6d1c7e80e59ad1c530e50bea40fa4c843a363e2d7824deb7c13ca0f729ff824e"
