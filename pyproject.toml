@@ -23,7 +23,7 @@ pyyaml = "^6.0.2"
 watchfiles = "^1.0.4"
 typing-extensions = "^4.12.2"
 prometheus-client = "^0.21.1"
-prometheus-async = "^22.2.0"
+prometheus-async = "^25.1.0"
 parsedatetime = "^2.6"
 humanize = "^4.11.0"
 msgspec = {git = "https://github.com/jcrist/msgspec", rev = "595c33c4a71c6d0c539b82233982a65819e240cf"}
