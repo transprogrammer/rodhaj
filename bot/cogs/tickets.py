@@ -13,7 +13,7 @@ from discord.ext import commands
 from discord.utils import format_dt, utcnow
 from utils import ErrorEmbed
 from utils.checks import bot_check_permissions
-from utils.embeds import CooldownEmbed, Embed, LoggingEmbed
+from utils.embeds import CooldownEmbed, Embed
 from utils.modals import RoboModal
 from utils.views import RoboView
 
@@ -255,6 +255,13 @@ class ReplyEmbed(discord.Embed):
         super().__init__(**kwargs)
         self.set_footer(text="Sent at")
         self.set_author(name=author.global_name, icon_url=author.display_avatar.url)
+
+
+class LoggingEmbed(discord.Embed):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("color", discord.Color.from_rgb(212, 252, 255))
+        kwargs.setdefault("timestamp", discord.utils.utcnow())
+        super().__init__(**kwargs)
 
 
 ### UI Components (Views, Modals and Selects)

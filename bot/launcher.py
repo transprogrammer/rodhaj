@@ -3,11 +3,10 @@ import signal
 from pathlib import Path
 
 import asyncpg
-import discord
 from aiohttp import ClientSession
-from rodhaj import Rodhaj, init
-from utils import KeyboardInterruptHandler, RodhajLogger
+from rodhaj import KeyboardInterruptHandler, Rodhaj, init
 from utils.config import RodhajConfig
+from utils.logger import RodhajLogger
 
 if os.name == "nt":
     from winloop import run
@@ -19,10 +18,6 @@ config = RodhajConfig(config_path)
 
 TOKEN = config["rodhaj"]["token"]
 POSTGRES_URI = config["postgres_uri"]
-
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
 
 
 async def main() -> None:
@@ -36,9 +31,7 @@ async def main() -> None:
             command_timeout=30,
         ) as pool,
     ):
-        async with Rodhaj(
-            config=config, intents=intents, session=session, pool=pool
-        ) as bot:
+        async with Rodhaj(config=config, session=session, pool=pool) as bot:
             bot.loop.add_signal_handler(signal.SIGTERM, KeyboardInterruptHandler(bot))
             bot.loop.add_signal_handler(signal.SIGINT, KeyboardInterruptHandler(bot))
             await bot.start(TOKEN)

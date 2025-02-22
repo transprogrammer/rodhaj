@@ -9,9 +9,7 @@ from .context import GuildContext as GuildContext, RoboContext as RoboContext
 from .embeds import (
     Embed as Embed,
     ErrorEmbed as ErrorEmbed,
-    LoggingEmbed as LoggingEmbed,
 )
-from .handler import KeyboardInterruptHandler as KeyboardInterruptHandler
 from .help import RodhajHelp as RodhajHelp
 from .logger import RodhajLogger as RodhajLogger
 from .modals import RoboModal as RoboModal
