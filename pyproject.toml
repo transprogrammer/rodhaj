@@ -1,53 +1,13 @@
-[tool.poetry]
+[project]
 name = "rodhaj"
 version = "0.3.1"
-description = "Transprogrammer's custom modmail bot"
-authors = ["No767 <73260931+No767@users.noreply.github.com>"]
-license = "Apache-2.0"
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.9,<4"
-discord-py = {extras = ["speed"], version = "^2.4.0"}
-uvloop = {markers = "sys_platform != \"win32\"", version = "^0.21.0"}
-winloop = {markers = "sys_platform == \"win32\"", version = "^0.1.8"}
-asyncpg = "^0.30.0"
-discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus", rev = "8686b5d1bbc1d3c862292eb436ab630d6e9c9b53"}
-psutil = "^7.0.0"
-pygit2 = "^1.15.1"
-python-dateutil = "^2.9.0"
-click = "^8.1.8"
-async-lru = "^2.0.4"
-jishaku = "^2.6.0"
-pyyaml = "^6.0.2"
-watchfiles = "^1.0.4"
-typing-extensions = "^4.12.2"
-prometheus-client = "^0.21.1"
-prometheus-async = "^25.1.0"
-parsedatetime = "^2.6"
-humanize = "^4.12.0"
-msgspec = {git = "https://github.com/jcrist/msgspec", rev = "595c33c4a71c6d0c539b82233982a65819e240cf"}
-
-
-[tool.poetry.group.dev.dependencies]
-lefthook = "^1.10.11"
-pyright = "^1.1.394"
-ruff = "^0.9.7"
-tox = "^4.24.1"
-
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^7.4.7"
-sphinx-copybutton = "^0.5.2"
-furo = "^2024.8.6"
+description = "A improved, modern version of ModMail for Transprogrammer"
+license = {file = "LICENSE"}
+requires-python = ">=3.9,<4.0"
 
 [tool.pyright]
 include = ["bot/**"]
-exclude = [
-    "**/__pycache__", 
-    "**/.mypy_cache", 
-    "**/.dmpypy.json", 
-]
+exclude = ["**/__pycache__"]
 reportMissingImports = true
 typeCheckingMode = "basic"
 reportUnnecessaryTypeIgnoreComment = "warning"
@@ -87,7 +47,3 @@ combine-as-imports = true
 
 [tool.ruff.format]
 docstring-code-format = true
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

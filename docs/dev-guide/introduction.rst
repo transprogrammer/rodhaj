@@ -48,7 +48,7 @@ In order to work on the project at all, you will need to fork and clone the repo
 
 .. code-block:: bash
 
-    git clone https://github.com/SomeUser/rodhaj
+    git clone https://github.com/transprogrammer/rodhaj
 
 Step 2 - Create a virtualenv
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
