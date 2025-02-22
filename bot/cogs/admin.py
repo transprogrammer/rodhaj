@@ -13,7 +13,7 @@ from discord.ext import commands
 from discord.ext.commands import Greedy
 
 if TYPE_CHECKING:
-    from libs.utils import RoboContext
+    from utils import RoboContext
 
     from bot.rodhaj import Rodhaj
 

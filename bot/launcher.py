@@ -5,9 +5,9 @@ from pathlib import Path
 import asyncpg
 import discord
 from aiohttp import ClientSession
-from libs.utils import KeyboardInterruptHandler, RodhajLogger
-from libs.utils.config import RodhajConfig
 from rodhaj import Rodhaj, init
+from utils import KeyboardInterruptHandler, RodhajLogger
+from utils.config import RodhajConfig
 
 if os.name == "nt":
     from winloop import run
@@ -26,13 +26,16 @@ intents.members = True
 
 
 async def main() -> None:
-    async with ClientSession() as session, asyncpg.create_pool(
-        dsn=POSTGRES_URI,
-        min_size=25,
-        max_size=25,
-        init=init,
-        command_timeout=30,
-    ) as pool:
+    async with (
+        ClientSession() as session,
+        asyncpg.create_pool(
+            dsn=POSTGRES_URI,
+            min_size=25,
+            max_size=25,
+            init=init,
+            command_timeout=30,
+        ) as pool,
+    ):
         async with Rodhaj(
             config=config, intents=intents, session=session, pool=pool
         ) as bot:

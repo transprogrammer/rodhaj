@@ -11,11 +11,11 @@ import psutil
 import pygit2
 from discord.ext import commands
 from discord.utils import format_dt
-from libs.utils import Embed, human_timedelta, is_docker
 from pygit2.enums import SortMode
+from utils import Embed, human_timedelta, is_docker
 
 if TYPE_CHECKING:
-    from libs.utils import RoboContext
+    from utils import RoboContext
 
     from bot.rodhaj import Rodhaj
 

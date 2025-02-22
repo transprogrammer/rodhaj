@@ -23,23 +23,23 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands, menus
-from libs.utils.checks import (
+from utils.checks import (
     bot_check_permissions,
     check_permissions,
     is_manager,
 )
-from libs.utils.config import OptionsHelp
-from libs.utils.embeds import CooldownEmbed, Embed
-from libs.utils.pages import SimplePages
-from libs.utils.pages.paginator import RoboPages
-from libs.utils.prefix import get_prefix
-from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
+from utils.config import OptionsHelp
+from utils.embeds import CooldownEmbed, Embed
+from utils.pages import SimplePages
+from utils.pages.paginator import RoboPages
+from utils.prefix import get_prefix
+from utils.time import FriendlyTimeResult, UserFriendlyTime
 
 from cogs.tickets import get_cached_thread
 
 if TYPE_CHECKING:
-    from libs.utils import GuildContext
     from rodhaj import Rodhaj
+    from utils import GuildContext
 
     from cogs.tickets import Tickets
 

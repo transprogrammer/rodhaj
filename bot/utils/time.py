@@ -14,8 +14,9 @@ units["minutes"].append("mins")
 units["seconds"].append("secs")
 
 if TYPE_CHECKING:
-    from libs.utils.context import RoboContext
     from typing_extensions import Self
+
+    from utils.context import RoboContext
 
 
 def human_join(seq: Sequence[str], delim: str = ", ", final: str = "or") -> str:

@@ -20,15 +20,15 @@ from cogs.tickets import (
     get_partial_ticket,
 )
 from discord.ext import commands
-from libs.utils import RoboContext, RodhajCommandTree, RodhajHelp
-from libs.utils.config import RodhajConfig
-from libs.utils.prefix import get_prefix
-from libs.utils.reloader import Reloader
+from utils import RoboContext, RodhajCommandTree, RodhajHelp
+from utils.config import RodhajConfig
+from utils.prefix import get_prefix
+from utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.config import Config
     from cogs.tickets import Tickets
-    from libs.utils.context import RoboContext
+    from utils.context import RoboContext
 
 
 async def init(conn: asyncpg.Connection):

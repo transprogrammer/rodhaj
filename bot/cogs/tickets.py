@@ -11,17 +11,17 @@ import msgspec
 from async_lru import alru_cache
 from discord.ext import commands
 from discord.utils import format_dt, utcnow
-from libs.utils import ErrorEmbed
-from libs.utils.checks import bot_check_permissions
-from libs.utils.embeds import CooldownEmbed, Embed, LoggingEmbed
-from libs.utils.modals import RoboModal
-from libs.utils.views import RoboView
+from utils import ErrorEmbed
+from utils.checks import bot_check_permissions
+from utils.embeds import CooldownEmbed, Embed, LoggingEmbed
+from utils.modals import RoboModal
+from utils.views import RoboView
 
 from .config import GuildWebhookDispatcher
 
 if TYPE_CHECKING:
-    from libs.utils import GuildContext, RoboContext
     from rodhaj import Rodhaj
+    from utils import GuildContext, RoboContext
 
     from .config import Config
 
