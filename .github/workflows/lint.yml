@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  Analyze:
-    runs-on: ubuntu-latest
+  check:
+    runs-on: ubuntu-24.04
 
     strategy:
       fail-fast: false
