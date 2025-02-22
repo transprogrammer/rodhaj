@@ -3,7 +3,7 @@ name = "rodhaj"
 version = "0.3.1"
 description = "A improved, modern version of ModMail for Transprogrammer"
 license = {file = "LICENSE"}
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 
 [tool.pyright]
 include = ["bot/**"]
