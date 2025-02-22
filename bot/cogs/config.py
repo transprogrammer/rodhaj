@@ -23,7 +23,6 @@ import msgspec
 from async_lru import alru_cache
 from discord import app_commands
 from discord.ext import commands, menus
-from libs.tickets.utils import get_cached_thread
 from libs.utils.checks import (
     bot_check_permissions,
     check_permissions,
@@ -35,6 +34,8 @@ from libs.utils.pages import SimplePages
 from libs.utils.pages.paginator import RoboPages
 from libs.utils.prefix import get_prefix
 from libs.utils.time import FriendlyTimeResult, UserFriendlyTime
+
+from cogs.tickets import get_cached_thread
 
 if TYPE_CHECKING:
     from libs.utils import GuildContext

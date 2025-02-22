@@ -11,10 +11,15 @@ from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import Blocklist, GuildWebhookDispatcher
 from cogs.ext.prometheus import Metrics
+from cogs.tickets import (
+    PartialConfig,
+    ReservedTags,
+    StatusChecklist,
+    TicketConfirmView,
+    get_cached_thread,
+    get_partial_ticket,
+)
 from discord.ext import commands
-from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
-from libs.tickets.utils import get_cached_thread, get_partial_ticket
-from libs.tickets.views import TicketConfirmView
 from libs.utils import RoboContext, RodhajCommandTree, RodhajHelp
 from libs.utils.config import RodhajConfig
 from libs.utils.prefix import get_prefix
