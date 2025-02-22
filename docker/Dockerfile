@@ -16,8 +16,7 @@ COPY /requirements.txt /rodhaj/requirements.txt
 
 RUN adduser --disabled-password --gecos "" rodhaj \
   && chown -R rodhaj:rodhaj /rodhaj \
-  && chmod +x /rodhaj/start.sh \
-  && chmod +x /rodhaj/wait-for
+  && chmod +x /rodhaj/start.sh
 
 USER rodhaj
 
