@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  Analyze:
+  check:
     runs-on: ubuntu-24.04
 
     strategy:
