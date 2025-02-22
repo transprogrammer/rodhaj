@@ -7,7 +7,7 @@ on:
 
 jobs:
   Build-and-Push:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     # We want to filter out dependabot and pre-commit
     # automated pushes to main
