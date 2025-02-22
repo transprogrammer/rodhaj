@@ -4,7 +4,7 @@ winloop>=0.1.8,<1 ; sys_platform == "win32"
 asyncpg>=0.30.0,<1
 discord-ext-menus @ git+https://github.com/Rapptz/discord-ext-menus@8686b5d1bbc1d3c862292eb436ab630d6e9c9b53
 psutil>=7.0.0,<8
-pygit2>=1.17.0,<2
+pygit2>=1.16.0,<2
 python-dateutil>=2.9.0.post0,<3
 click>=8.1.8,<9
 typing-extensions>=4.12.2,<5
