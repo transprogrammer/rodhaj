@@ -21,5 +21,4 @@ _Put an `x` in the boxes that apply_
 
 - [ ] If code changes were made then they have been tested.
   - [ ] I have updated the documentation to reflect the changes. (if appropriate)
-- [ ] All workflows (except pre-commit.ci) pass with my new changes
 - [ ] This PR does **not** address a duplicate issue or PR
