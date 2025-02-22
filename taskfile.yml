@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  dev-up:
+    preconditions:
+      - test -f docker/docker-compose.dev.yml
+    cmds:
+      - docker compose -f docker/docker-compose.dev.yml up -d
+
+  dev-stop:
+    preconditions:
+      - test -f docker/docker-compose.dev.yml
+    cmds:
+      - docker compose -f docker/docker-compose.dev.yml stop
+
+  start:
+    preconditions:
+      - test -f bot/config.yml
+    cmds:
+      - python bot/launcher.py
+    silent: true
+  
+  check:
+    cmds:
+      - ruff check bot --fix --exit-non-zero-on-fix
+      - ruff format bot
+    silent: true
+
+  fmt:
+    cmds:
+      - ruff format server
+    silent: true

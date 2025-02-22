@@ -1,6 +1,3 @@
-####################################################################################################
-## Final image
-####################################################################################################
 FROM python:3.13-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,16 +6,12 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   bash \
   git \
-  netcat-traditional \
   tini \
-  gcc \
-  libc6-dev \
   && apt-get clean
 
 WORKDIR /rodhaj
 COPY /bot /rodhaj/bot/
 COPY /docker/start.sh /rodhaj/start.sh
-COPY /docker/wait-for /rodhaj/wait-for
 COPY /requirements.txt /rodhaj/requirements.txt
 
 RUN adduser --disabled-password --gecos "" rodhaj \
