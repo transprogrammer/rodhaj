@@ -4,6 +4,10 @@
 # Logs
 **/*.log
 
+# YAML configuration
+**/*.yaml
+**/*.yml
+
 # Cache files
 **/__pycache__
 **/*.py[cod]
