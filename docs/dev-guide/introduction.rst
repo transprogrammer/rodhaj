@@ -185,3 +185,9 @@ Type Hinting
 Rodhaj actively uses `type hinting <https://docs.python.org/3/library/typing.html>`_ in order to verify for types before runtime.
 `Pyright <https://github.com/microsoft/pyright>`_ is used to enforce this standard. Checks happen before you commit, and on Github actions.
 These checks are activated by default on VSCode. Pyright is available as a LSP on Neovim.
+
+Minimum supported Python versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Rodhaj implements the `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`_ standard. 
+Spefically, Python versions over **3 years** are dropped after initial release.
