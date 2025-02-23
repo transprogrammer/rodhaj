@@ -11,7 +11,6 @@ from .embeds import (
     ErrorEmbed as ErrorEmbed,
 )
 from .help import RodhajHelp as RodhajHelp
-from .logger import RodhajLogger as RodhajLogger
 from .modals import RoboModal as RoboModal
 from .time import human_timedelta as human_timedelta
 from .tree import RodhajCommandTree as RodhajCommandTree

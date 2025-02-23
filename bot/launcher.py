@@ -4,9 +4,8 @@ from pathlib import Path
 
 import asyncpg
 from aiohttp import ClientSession
-from rodhaj import KeyboardInterruptHandler, Rodhaj, init
+from rodhaj import KeyboardInterruptHandler, Rodhaj, RodhajLogger, init
 from utils.config import RodhajConfig
-from utils.logger import RodhajLogger
 
 if os.name == "nt":
     from winloop import run
@@ -37,10 +36,6 @@ async def main() -> None:
             await bot.start(TOKEN)
 
 
-def launch() -> None:
+if __name__ == "__main__":
     with RodhajLogger():
         run(main())
-
-
-if __name__ == "__main__":
-    launch()

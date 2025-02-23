@@ -69,10 +69,10 @@ class RodhajLogger:
     def __init__(self) -> None:
         self.self = self
         self.log = logging.getLogger("rodhaj")
+        self.log.setLevel(logging.INFO)
 
     def __enter__(self) -> None:
         max_bytes = 32 * 1024 * 1024  # 32 MiB
-        self.log.setLevel(logging.INFO)
         handler = RotatingFileHandler(
             filename="rodhaj.log",
             encoding="utf-8",
