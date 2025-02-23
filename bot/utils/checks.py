@@ -12,7 +12,7 @@ from discord.ext import commands
 T = TypeVar("T", commands.Command, commands.Group)
 
 if TYPE_CHECKING:
-    from libs.utils.context import RoboContext
+    from utils.context import RoboContext
 
 
 async def check_guild_permissions(

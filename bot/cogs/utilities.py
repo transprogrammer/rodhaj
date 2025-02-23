@@ -10,19 +10,17 @@ import discord
 import psutil
 import pygit2
 from discord.ext import commands
-from discord.utils import format_dt
-from libs.utils import Embed, human_timedelta, is_docker
 from pygit2.enums import SortMode
+from utils.checks import is_docker
+from utils.embeds import Embed
+from utils.time import human_timedelta
 
 if TYPE_CHECKING:
-    from libs.utils import RoboContext
+    from utils.context import RoboContext
 
     from bot.rodhaj import Rodhaj
 
 
-# A cog houses a category of commands
-# Unlike djs, think of commands being stored as a category,
-# which the cog is that category
 class Utilities(commands.Cog):
     def __init__(self, bot: Rodhaj) -> None:
         self.bot = bot
@@ -31,6 +29,8 @@ class Utilities(commands.Cog):
     @property
     def display_emoji(self) -> discord.PartialEmoji:
         return discord.PartialEmoji(name="\U0001f9f0")
+
+    ### Utility logic
 
     def get_bot_uptime(self, *, brief: bool = False) -> str:
         return human_timedelta(
@@ -48,7 +48,9 @@ class Utilities(commands.Cog):
         )
 
         # [`hash`](url) message (offset)
-        offset = format_dt(commit_time.astimezone(datetime.timezone.utc), "R")
+        offset = discord.utils.format_dt(
+            commit_time.astimezone(datetime.timezone.utc), "R"
+        )
         commit_id = str(commit.id)
         return f"[`{short_sha2}`](https://github.com/transprogrammer/rodhaj/commit/{commit_id}) {short} ({offset})"
 
@@ -71,6 +73,8 @@ class Utilities(commands.Cog):
         if value is None:
             return 0
         return value
+
+    ### Commands
 
     @commands.hybrid_command(name="about")
     async def about(self, ctx: RoboContext) -> None:

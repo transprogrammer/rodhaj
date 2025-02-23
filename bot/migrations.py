@@ -9,8 +9,8 @@ from typing import Optional, TypeVar
 
 import asyncpg
 import click
-from libs.utils.config import RodhajConfig
 from typing_extensions import Self
+from utils.config import RodhajConfig
 
 path = Path(__file__).parent / "config.yml"
 config = RodhajConfig(path)
@@ -256,7 +256,7 @@ async def log(reverse):
     )
     for rev in revs:
         as_yellow = click.style(f"V{rev.version:>03}", fg="yellow")
-        click.echo(f'{as_yellow} {rev.description.replace("_", " ")}')
+        click.echo(f"{as_yellow} {rev.description.replace('_', ' ')}")
 
 
 if __name__ == "__main__":

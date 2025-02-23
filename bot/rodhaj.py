@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from types import TracebackType
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
 
 import asyncpg
 import discord
@@ -11,19 +14,27 @@ from aiohttp import ClientSession
 from cogs import EXTENSIONS, VERSION
 from cogs.config import Blocklist, GuildWebhookDispatcher
 from cogs.ext.prometheus import Metrics
+from cogs.tickets import (
+    PartialConfig,
+    ReservedTags,
+    StatusChecklist,
+    TicketConfirmView,
+    get_cached_thread,
+    get_partial_ticket,
+)
+from discord import app_commands
 from discord.ext import commands
-from libs.tickets.structs import PartialConfig, ReservedTags, StatusChecklist
-from libs.tickets.utils import get_cached_thread, get_partial_ticket
-from libs.tickets.views import TicketConfirmView
-from libs.utils import RoboContext, RodhajCommandTree, RodhajHelp
-from libs.utils.config import RodhajConfig
-from libs.utils.prefix import get_prefix
-from libs.utils.reloader import Reloader
+from utils import RoboContext, RodhajCommandTree, RodhajHelp
+from utils.config import RodhajConfig
+from utils.prefix import get_prefix
+from utils.reloader import Reloader
 
 if TYPE_CHECKING:
     from cogs.config import Config
     from cogs.tickets import Tickets
-    from libs.utils.context import RoboContext
+    from utils.context import RoboContext
+
+BE = TypeVar("BE", bound=BaseException)
 
 
 async def init(conn: asyncpg.Connection):
@@ -43,22 +54,78 @@ async def init(conn: asyncpg.Connection):
     )
 
 
+class KeyboardInterruptHandler:
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self._task: Optional[asyncio.Task] = None
+
+    def __call__(self):
+        if self._task:
+            raise KeyboardInterrupt
+        self._task = self.bot.loop.create_task(self.bot.close())
+
+
+class RodhajLogger:
+    def __init__(self) -> None:
+        self.self = self
+        self.log = logging.getLogger("rodhaj")
+        self.log.setLevel(logging.INFO)
+
+    def __enter__(self) -> None:
+        max_bytes = 32 * 1024 * 1024  # 32 MiB
+        handler = RotatingFileHandler(
+            filename="rodhaj.log",
+            encoding="utf-8",
+            mode="w",
+            maxBytes=max_bytes,
+            backupCount=5,
+        )
+        fmt = logging.Formatter(
+            fmt="{asctime} [{levelname:<8}]{:^4}{message}",
+            datefmt="[%Y-%m-%d %H:%M:%S]",
+            style="{",
+        )
+        handler.setFormatter(fmt)
+        self.log.addHandler(handler)
+        discord.utils.setup_logging(formatter=fmt)
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BE]],
+        exc: Optional[BE],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        self.log.info("Shutting down...")
+        handlers = self.log.handlers[:]
+        for hdlr in handlers:
+            hdlr.close()
+            self.log.removeHandler(hdlr)
+
+
 class Rodhaj(commands.Bot):
     """Main bot for Rodhaj"""
 
     def __init__(
         self,
         config: RodhajConfig,
-        intents: discord.Intents,
         session: ClientSession,
         pool: asyncpg.Pool,
         *args,
         **kwargs,
     ):
+        intents = discord.Intents(
+            emojis=True,
+            guilds=True,
+            members=True,
+            message_content=True,
+            messages=True,
+            reactions=True,
+        )
         super().__init__(
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="a game"
             ),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=False),
             allowed_mentions=discord.AllowedMentions(
                 everyone=False, replied_user=False
             ),
