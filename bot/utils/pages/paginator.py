@@ -109,10 +109,8 @@ class RoboPages(discord.ui.View):
     ) -> None:
         max_pages = self.source.get_max_pages()
         try:
-            if max_pages is None:
+            if not max_pages or max_pages > page_number >= 0:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(interaction, page_number)
-            elif max_pages > page_number >= 0:
                 await self.show_page(interaction, page_number)
         except IndexError:
             # An error happened that can be handled, so ignore it.
@@ -189,6 +187,7 @@ class RoboPages(discord.ui.View):
     async def go_to_current_page(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
+        # Current button does nothing
         pass
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
