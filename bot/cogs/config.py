@@ -10,7 +10,6 @@ from typing import (
     Any,
     AsyncIterator,
     Literal,
-    NamedTuple,
     Optional,
     Union,
     overload,
@@ -49,10 +48,28 @@ UNKNOWN_ERROR_MESSAGE = (
 )
 OPTIONS_FILE = Path(__file__).parents[1] / "locale" / "options.json"
 
+### Enums
 
-class BlocklistTicket(NamedTuple):
+
+class ConfigType(Enum):
+    TOGGLE = 0
+    SET = 1
+
+
+### Structs
+
+
+class BlocklistTicket(msgspec.Struct, frozen=True):
     cog: Tickets
     thread: discord.Thread
+
+
+class ConfigHelpEntry(msgspec.Struct, frozen=True):
+    key: str
+    default: str
+    description: str
+    examples: list[str]
+    notes: list[str]
 
 
 class BlocklistEntity(msgspec.Struct, frozen=True):
@@ -64,63 +81,6 @@ class BlocklistEntity(msgspec.Struct, frozen=True):
         user = self.bot.get_user(self.entity_id)
         name = user.global_name if user else "Unknown"
         return f"{name} (ID: {self.entity_id})"
-
-
-class BlocklistPages(SimplePages):
-    def __init__(self, entries: list[BlocklistEntity], *, ctx: GuildContext):
-        converted = [entry.format() for entry in entries]
-        super().__init__(converted, ctx=ctx)
-
-
-class Blocklist:
-    def __init__(self, bot: Rodhaj):
-        self.bot = bot
-        self._blocklist: dict[int, BlocklistEntity] = {}
-
-    async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
-        query = """
-        SELECT guild_id, entity_id
-        FROM blocklist;
-        """
-        rows = await connection.fetch(query)
-        return {
-            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
-        }
-
-    async def load(self, connection: Optional[asyncpg.Connection] = None):
-        try:
-            self._blocklist = await self._load(connection or self.bot.pool)
-        except Exception:
-            self._blocklist = {}
-
-    @overload
-    def get(self, key: int) -> Optional[BlocklistEntity]: ...
-
-    @overload
-    def get(self, key: int) -> BlocklistEntity: ...
-
-    def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
-        return self._blocklist.get(key, default)
-
-    def __contains__(self, item: int) -> bool:
-        return item in self._blocklist
-
-    def __getitem__(self, item: int) -> BlocklistEntity:
-        return self._blocklist[item]
-
-    def __len__(self) -> int:
-        return len(self._blocklist)
-
-    def all(self) -> dict[int, BlocklistEntity]:
-        return self._blocklist
-
-    def replace(self, blocklist: dict[int, BlocklistEntity]) -> None:
-        self._blocklist = blocklist
-
-
-class ConfigType(Enum):
-    TOGGLE = 0
-    SET = 1
 
 
 # Msgspec Structs are usually extremely fast compared to slotted classes
@@ -196,6 +156,55 @@ class GuildWebhook(msgspec.Struct, frozen=True):
         return guild and guild.get_channel(self.ticket_channel_id)  # type: ignore
 
 
+### Core classes
+
+
+class Blocklist:
+    def __init__(self, bot: Rodhaj):
+        self.bot = bot
+        self._blocklist: dict[int, BlocklistEntity] = {}
+
+    async def _load(self, connection: Union[asyncpg.Connection, asyncpg.Pool]):
+        query = """
+        SELECT guild_id, entity_id
+        FROM blocklist;
+        """
+        rows = await connection.fetch(query)
+        return {
+            row["entity_id"]: BlocklistEntity(bot=self.bot, **dict(row)) for row in rows
+        }
+
+    async def load(self, connection: Optional[asyncpg.Connection] = None):
+        try:
+            self._blocklist = await self._load(connection or self.bot.pool)
+        except Exception:
+            self._blocklist = {}
+
+    @overload
+    def get(self, key: int) -> Optional[BlocklistEntity]: ...
+
+    @overload
+    def get(self, key: int) -> BlocklistEntity: ...
+
+    def get(self, key: int, default: Any = None) -> Optional[BlocklistEntity]:
+        return self._blocklist.get(key, default)
+
+    def __contains__(self, item: int) -> bool:
+        return item in self._blocklist
+
+    def __getitem__(self, item: int) -> BlocklistEntity:
+        return self._blocklist[item]
+
+    def __len__(self) -> int:
+        return len(self._blocklist)
+
+    def all(self) -> dict[int, BlocklistEntity]:
+        return self._blocklist
+
+    def replace(self, blocklist: dict[int, BlocklistEntity]) -> None:
+        self._blocklist = blocklist
+
+
 class GuildWebhookDispatcher:
     def __init__(self, bot: Rodhaj, guild_id: int):
         self.bot = bot
@@ -234,12 +243,7 @@ class GuildWebhookDispatcher:
         return GuildWebhook(bot=self.bot, **dict(rows))
 
 
-class ConfigHelpEntry(msgspec.Struct, frozen=True):
-    key: str
-    default: str
-    description: str
-    examples: list[str]
-    notes: list[str]
+### Embeds
 
 
 class ConfigEntryEmbed(Embed):
@@ -254,6 +258,15 @@ class ConfigEntryEmbed(Embed):
             value="\n".join(f"- {note}" for note in entry.notes) or None,
             inline=False,
         )
+
+
+### UI elements (Sources and Pages)
+
+
+class BlocklistPages(SimplePages):
+    def __init__(self, entries: list[BlocklistEntity], *, ctx: GuildContext):
+        converted = [entry.format() for entry in entries]
+        super().__init__(converted, ctx=ctx)
 
 
 class ConfigHelpPageSource(menus.ListPageSource):
@@ -307,6 +320,9 @@ class ConfigPages(RoboPages):
     ):
         super().__init__(ConfigPageSource(entries, active), ctx=ctx)
         self.embed = discord.Embed(colour=discord.Colour.from_rgb(200, 168, 255))
+
+
+### Flags and Converters
 
 
 class ConfigOptionFlags(commands.FlagConverter):
@@ -375,6 +391,9 @@ class PrefixConverter(commands.Converter):
         if len(argument) > 100:
             raise commands.BadArgument("That prefix is too long.")
         return argument
+
+
+### Command cog
 
 
 class Config(commands.Cog):
@@ -511,6 +530,7 @@ class Config(commands.Cog):
         return ", ".join(f"`{prefix}`" for prefix in prefixes[2:])
 
     ### Misc Utilities
+
     async def _handle_error(
         self, error: commands.CommandError, *, ctx: GuildContext
     ) -> None:
@@ -519,6 +539,8 @@ class Config(commands.Cog):
             await ctx.send(embed=embed)
         elif isinstance(error, commands.BadArgument):
             await ctx.send(str(error))
+
+    ### Commands
 
     @is_manager()
     @bot_check_permissions(manage_channels=True, manage_webhooks=True)
