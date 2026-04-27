@@ -9,4 +9,4 @@ tox>=4.24.1,<5
 # Docs
 sphinx>=8.2.1,<9
 sphinx-copybutton>=0.5.2,<1
-furo>=2024.8.6,<2025
+furo>=2025.12.19,<2026
